@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,10 +12,25 @@ namespace tests
     public class UnitTest1
     {
         [Fact]
+        public void TestFieldSpec()
+        {
+
+
+            var spec = new FieldSpec(typeof(TestClass));
+            var spec2 = new FieldSpec<TestClass>();
+
+            // var p = new Parser(spec);
+
+            // var (str, parms, error) = p.ParseQuery(raw);
+            // Console.WriteLine(str, parms, error);
+
+            // "WHERE city  =  TLV  AND (( city  =  TLV ) OR ( city  =  NYC )) AND  account  LIKE  =   % github %  "
+        }
+        [Fact]
         public void Test1()
         {
             var raw = @"{
-                        ""city"": ""TLV"",
+                        ""city"": ""TLV"", 
                         ""$or"": [
                                 { ""city"": ""TLV"" },
                                 { ""city"": ""NYC"" } 
@@ -31,11 +47,11 @@ namespace tests
                     Name = "account",
                 },
             };
-            var spec = new FieldSpec(fields);
-            var p = new Parser(spec);
+            // var spec = new FieldSpec(fields);
+            // var p = new Parser(spec);
 
-            var (str, parms, error) = p.ParseQuery(raw);
-            Console.WriteLine(str, parms, error);
+            // var (str, parms, error) = p.ParseQuery(raw);
+            // Console.WriteLine(str, parms, error);
 
             // "WHERE city  =  TLV  AND (( city  =  TLV ) OR ( city  =  NYC )) AND  account  LIKE  =   % github %  "
         }
@@ -45,204 +61,192 @@ namespace tests
 
 // TODO:
 /*  Attributes
-    Ignore
-    Ignore.Sort
-    Ignore.Filter
     CustomTypeConverter
     CustomValidator
-    Custom/Limit operations, only want allow EQ not GTE for example for a given field..  
 */
-[System.AttributeUsage(System.AttributeTargets.Class |
-                       System.AttributeTargets.Struct)
-]
-public class Test : System.Attribute
-{
-    private string[] _ops;
 
-    public Test(params string[] ops)
+[AttributeUsage(AttributeTargets.Class)]
+public class Filterable : System.Attribute
+{
+    private string[] _props;
+    public Filterable(params string[] props) { _props = props; }
+}
+
+[AttributeUsage(AttributeTargets.Class)]
+public class Sortable : System.Attribute
+{
+    private string[] _props;
+    public Sortable(params string[] props) { _props = props; }
+}
+
+[AttributeUsage(AttributeTargets.Property)]
+public class Ignore : System.Attribute
+{
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Sort : System.Attribute { }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Filter : System.Attribute { }
+}
+public class Ops
+{
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Allowed : System.Attribute
     {
-        _ops = ops;
+        private string[] _ops;
+        public Allowed(params string[] ops) { _ops = ops; }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Disallowed : System.Attribute
+    {
+        private string[] _ops;
+        public Disallowed(params string[] ops) { _ops = ops; }
     }
 }
 
-public class Test2
+[AttributeUsage(AttributeTargets.Property)]
+public class ColumnName : System.Attribute
 {
-    // TODO: attempt to hack enums [Test(new[] { RqlOp.AND })]
-    public string Mem { get; set; }
+    private string _name;
+    public ColumnName(string name) { _name = name; }
 }
-public class SqlOp
+
+public static class SqlOp
 {
-
-    private readonly string value;
-    public static readonly SqlOp EQ = new SqlOp("=");
-
-    public static readonly SqlOp NEQ = new SqlOp("!=");
-
-    public static readonly SqlOp LT = new SqlOp("<");
-
-    public static readonly SqlOp GT = new SqlOp(">");
-
-    public static readonly SqlOp LTE = new SqlOp("<=");
-
-    public static readonly SqlOp GTE = new SqlOp(">=");
-
-    public static readonly SqlOp LIKE = new SqlOp("LIKE");
-
-    public static readonly SqlOp OR = new SqlOp("OR");
-
-    public static readonly SqlOp AND = new SqlOp("AND");
-
-    public static readonly SqlOp NIN = new SqlOp("NOT IN");
-
-    public static readonly SqlOp IN = new SqlOp("IN");
-
-    // public static readonly SqlOp NOT = new SqlOp("$not");
-
-    private SqlOp(String value)
+    public const string EQ = "=";
+    public const string NEQ = "!=";
+    public const string LT = "<";
+    public const string GT = ">";
+    public const string LTE = "<=";
+    public const string GTE = ">=";
+    public const string LIKE = "LIKE";
+    public const string OR = "OR";
+    public const string AND = "AND";
+    public const string NIN = "NOT IN";
+    public const string IN = "IN";
+    private static readonly HashSet<string> _SqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        this.value = value;
-    }
-
-    private static readonly Dictionary<string, SqlOp> _SqlOps = new Dictionary<string, SqlOp>
-    {
-        {EQ.value, EQ},
-        {NEQ.value, NEQ},
-        {LT.value, LT},
-        {GT.value, GT},
-        {LTE.value, LTE},
-        {GTE.value, GTE},
-        {LIKE.value, LIKE},
-        {OR.value, OR},
-        {AND.value, AND},
-        {NIN.value, NIN},
-        {IN.value, IN},
+        {EQ},
+        {NEQ},
+        {LT},
+        {GT},
+        {LTE},
+        {GTE},
+        {LIKE},
+        {OR},
+        {AND},
+        {NIN},
+        {IN},
     };
 
-    private static readonly Dictionary<RqlOp, SqlOp> _rqlOps = new Dictionary<RqlOp, SqlOp>
+    public static bool IsOp(string val)
     {
-        {RqlOp.EQ, EQ},
-        {RqlOp.NEQ, NEQ},
-        {RqlOp.LT, LT},
-        {RqlOp.GT, GT},
-        {RqlOp.LTE, LTE},
-        {RqlOp.GTE, GTE},
-        {RqlOp.LIKE, LIKE},
-        {RqlOp.OR, OR},
-        {RqlOp.AND, AND},
-        {RqlOp.NIN, NIN},
-        {RqlOp.IN, IN},
-    };
+        if (val == null || val.Trim().Length < 0) return false;
 
-    public static (SqlOp, bool) TryParse(RqlOp val)
-    {
-        if (val == null)
-        {
-            return (null, false);
-        }
-        SqlOp SqlOp;
-        var didGet = _rqlOps.TryGetValue(val, out SqlOp);
-
-        return (SqlOp, didGet);
-
-    }
-
-    public static (SqlOp, bool) TryParse(string val)
-    {
-        if (val == null || val.Trim().Length < 0)
-        {
-            return (null, false);
-        }
-        val = val.ToLower();
-        SqlOp SqlOp;
-        var didGet = _SqlOps.TryGetValue(val, out SqlOp);
-
-        return (SqlOp, didGet);
-
-    }
-
-    public override String ToString()
-    {
-        return value;
+        return _SqlOps.Contains(val);
     }
 }
 
-
-public class RqlOp
+public interface IOpMapper
 {
-    private readonly string value;
-    public static readonly RqlOp EQ = new RqlOp("$eq");
-
-    public static readonly RqlOp NEQ = new RqlOp("$neq");
-
-    public static readonly RqlOp LT = new RqlOp("$lt");
-
-    public static readonly RqlOp GT = new RqlOp("$gt");
-
-    public static readonly RqlOp LTE = new RqlOp("$lte");
-
-    public static readonly RqlOp GTE = new RqlOp("$gte");
-
-    public static readonly RqlOp LIKE = new RqlOp("$like");
-
-    public static readonly RqlOp OR = new RqlOp("$or");
-
-    public static readonly RqlOp AND = new RqlOp("$and");
-
-    public static readonly RqlOp NIN = new RqlOp("$nin");
-
-    public static readonly RqlOp IN = new RqlOp("$in");
-
-    // public static readonly RqlOp NOT = new RqlOp("$not");
-    public static implicit operator string(RqlOp x)
+    (string, bool) GetDbOp(string rqlOp);
+}
+public class SqlMapper : IOpMapper
+{
+    private readonly Dictionary<string, string> _ops = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
-        return x.ToString();
-    }
-
-    private RqlOp(String value)
-    {
-        this.value = value;
-    }
-
-    private static readonly Dictionary<string, RqlOp> _rqlOps = new Dictionary<string, RqlOp>
-    {
-        {EQ.value, EQ},
-        {NEQ.value, NEQ},
-        {LT.value, LT},
-        {GT.value, GT},
-        {LTE.value, LTE},
-        {GTE.value, GTE},
-        {LIKE.value, LIKE},
-        {OR.value, OR},
-        {AND.value, AND},
-        {NIN.value, NIN},
-        {IN.value, IN},
+        {RqlOp.EQ,SqlOp.EQ},
+        {RqlOp.NEQ,SqlOp.NEQ},
+        {RqlOp.LT,SqlOp.LT},
+        {RqlOp.GT,SqlOp.GT},
+        {RqlOp.LTE,SqlOp.LTE},
+        {RqlOp.GTE,SqlOp.GTE},
+        {RqlOp.LIKE,SqlOp.LIKE},
+        {RqlOp.OR,SqlOp.OR},
+        {RqlOp.AND,SqlOp.AND},
+        {RqlOp.NIN,SqlOp.NIN},
+        {RqlOp.IN,SqlOp.IN},
     };
-
-    public static (RqlOp, bool) TryParse(string val)
+    (string, bool) IOpMapper.GetDbOp(string rqlOp)
     {
-        if (val == null || val.Trim().Length < 0)
-        {
-            return (null, false);
-        }
-        val = val.ToLower();
-        RqlOp rqlOp;
-        var didGet = _rqlOps.TryGetValue(val, out rqlOp);
+        if (rqlOp == null || rqlOp.Trim().Length < 0) return (null, false);
 
-        return (rqlOp, didGet);
-
-    }
-
-    public override String ToString()
-    {
-        return value;
+        string result;
+        var didFind = _ops.TryGetValue(rqlOp, out result);
+        return (result, didFind);
     }
 }
 
+public static class RqlOp
+{
+    public const string EQ = "$eq";
+    public const string NEQ = "$neq";
+    public const string LT = "$lt";
+    public const string GT = "$gt";
+    public const string LTE = "$lte";
+    public const string GTE = "$gte";
+    public const string LIKE = "$like";
+    public const string OR = "$or";
+    public const string AND = "$and";
+    public const string NIN = "$nin";
+    public const string IN = "$in";
+    private static readonly HashSet<string> _rqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        {EQ},
+        {NEQ},
+        {LT},
+        {GT},
+        {LTE},
+        {GTE},
+        {LIKE},
+        {OR},
+        {AND},
+        {NIN},
+        {IN},
+    };
+
+    public static bool IsOp(string val)
+    {
+        if (val == null || val.Trim().Length < 0) return false;
+
+        return _rqlOps.Contains(val);
+    }
+}
+
+public class TestClass2
+{
+    public int X_Int { get; set; }
+    public string X_String { get; set; }
+    public bool X_Bool { get; set; }
+    public DateTime X_DateTime { get; set; }
+}
+
+public class TestClass
+{
+    public int T_Int { get; set; }
+    public string T_String { get; set; }
+    public bool T_Bool { get; set; }
+    public DateTime T_DateTime { get; set; }
+    public TestClass2 T_SubClass { get; set; }
+}
+
+public class FieldSpec<T> : FieldSpec
+{
+    public FieldSpec() : base(typeof(T)) { }
+}
 public class FieldSpec
 {
-    public FieldSpec(IEnumerable<Field> fields)
+    private FieldSpec() { }
+    public FieldSpec(Type t)
     {
-        _fields = fields.ToDictionary(f => f.Name, f => f);
+        var properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+        // if (property.GetCustomAttributes(true)
+        // .Any(attr => attr.GetType().Name == typeof(IgnoreSelectAttribute).Name || attr.GetType().Name == typeof(NotMappedAttribute).Name)) ;
+        // continue;
+
+        //  _fields = fields.ToDictionary(f => f.Name, f => f);
     }
     private Dictionary<string, Field> _fields = new Dictionary<string, Field>();
     public (Field, bool) GetField(string name)
@@ -262,7 +266,9 @@ public class FieldSpec
 public class Field
 {
     public string Name { get; set; }
-
+    // Expected type
+    // custom converter
+    // Validator ? 
 }
 
 public interface IError
@@ -281,6 +287,8 @@ public class Error : IError
         return _msg;
     }
 }
+
+// TODO: cache reflection 
 // TODO: hard typed errors/exceptions
 // TODO: pull params to dict 
 // TODO: dapper + sql raw examples 
@@ -306,6 +314,7 @@ public class Error : IError
 // TODO: investigate json ops
 public class Parser
 {
+    private readonly IOpMapper _opMapper;
     public Parser(FieldSpec fieldspec)
     {
         _fieldspec = fieldspec;
@@ -351,10 +360,11 @@ public class Parser
             }
 
             // Parse rql op
-            var (op, isOp) = RqlOp.TryParse(prop.Name);
+            var isOp = RqlOp.IsOp(prop.Name);
             if (isOp)
             {
-                var (sqlOp, isSqlOp) = SqlOp.TryParse(op);
+                var op = prop.Name;
+                var (sqlOp, isSqlOp) = _opMapper.GetDbOp(op);
                 if (!isSqlOp) return (null, new Error("rql operation not supported in sql"));
 
                 // Right side of op is collection of terms recursive call
