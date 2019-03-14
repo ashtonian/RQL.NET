@@ -312,6 +312,7 @@ public class Error : IError
 // TODO: js + typescript lib
 // TODO: convert enum classes to const
 // TODO: investigate json ops
+// TODO: dynamic spec so that it doesn't have to be global for the same struct, sometimes might not want that.
 public class Parser
 {
     private readonly IOpMapper _opMapper;
