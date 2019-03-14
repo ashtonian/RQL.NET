@@ -43,17 +43,36 @@ namespace tests
     }
 }
 
-/* Attributes
-    Ignore.* 
+// TODO:
+/*  Attributes
+    Ignore
     Ignore.Sort
     Ignore.Filter
     CustomTypeConverter
     CustomValidator
-    Custom/Limit operations, only want EQ not GTE for example..  
+    Custom/Limit operations, only want allow EQ not GTE for example for a given field..  
 */
+[System.AttributeUsage(System.AttributeTargets.Class |
+                       System.AttributeTargets.Struct)
+]
+public class Test : System.Attribute
+{
+    private string[] _ops;
 
+    public Test(params string[] ops)
+    {
+        _ops = ops;
+    }
+}
+
+public class Test2
+{
+    // TODO: attempt to hack enums [Test(new[] { RqlOp.AND })]
+    public string Mem { get; set; }
+}
 public class SqlOp
 {
+
     private readonly string value;
     public static readonly SqlOp EQ = new SqlOp("=");
 
@@ -174,6 +193,10 @@ public class RqlOp
     public static readonly RqlOp IN = new RqlOp("$in");
 
     // public static readonly RqlOp NOT = new RqlOp("$not");
+    public static implicit operator string(RqlOp x)
+    {
+        return x.ToString();
+    }
 
     private RqlOp(String value)
     {
@@ -263,6 +286,24 @@ public class Error : IError
 // TODO: dapper + sql raw examples 
 // TODO: pull out op mapper func from rql to sql to allow mongo or other.
 // TODO: column mapping 
+// TODO: limit offset sort 
+// TODO: feature throw vs return err
+// TODO: not and nor 
+// TODO: gentle validation flag ie if invalid op or field is entered drop and move 
+// TODO: flat nested object
+// TODO: benchmark on top of json deserialization 
+// TODO: example integrations: dapper, dapper.crud/extensions(limit+ofset), sql mapper
+// TODO: package(core,.sql) + build 
+// TODO: try with DI framework, mvc/web-api + multi target
+// TODO: allow token prefix config 
+// TODO: tokenizer ? vs @param1
+// TODO: pull out where and return {limit,offset,sort,expression, args}
+// TODO: eventually try and pull out json deserializer
+// TODO: refactor error messages to provide parent token details
+// TODO: eventually add nested query support
+// TODO: js + typescript lib
+// TODO: convert enum classes to const
+// TODO: investigate json ops
 public class Parser
 {
     public Parser(FieldSpec fieldspec)
@@ -376,14 +417,5 @@ public class Parser
         {
             return (null, null, new Error(e.ToString())); // CAUGHT exception likely from json
         }
-
-        /*
-        JToken             - abstract base class     
-        JContainer      - abstract base class of JTokens that can contain other JTokens
-            JArray      - represents a JSON array (contains an ordered list of JTokens)
-            JObject     - represents a JSON object (contains a collection of JProperties)
-            JProperty   - represents a JSON property (a name/JToken pair inside a JObject)
-        JValue          - represents a primitive JSON value (string, number, boolean, null)
-        */
     }
 }
