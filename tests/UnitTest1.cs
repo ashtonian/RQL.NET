@@ -14,6 +14,7 @@ namespace tests
         public void Test1()
         {
             var raw = @"{
+                        ""city"": ""TLV"",
                         ""$or"": [
                                 { ""city"": ""TLV"" },
                                 { ""city"": ""NYC"" } 
@@ -22,10 +23,21 @@ namespace tests
                 		}
                   ";
 
-            var p = new Parser();
+            var fields = new List<Field> {
+                new Field{
+                    Name= "city",
+                },
+                new Field{
+                    Name = "account",
+                },
+            };
+            var spec = new FieldSpec(fields);
+            var p = new Parser(spec);
 
             var (str, parms, error) = p.ParseQuery(raw);
             Console.WriteLine(str, parms, error);
+
+            // "WHERE city  =  TLV  AND (( city  =  TLV ) OR ( city  =  NYC )) AND  account  LIKE  =   % github %  "
         }
 
     }
@@ -205,6 +217,10 @@ public class RqlOp
 
 public class FieldSpec
 {
+    public FieldSpec(IEnumerable<Field> fields)
+    {
+        _fields = fields.ToDictionary(f => f.Name, f => f);
+    }
     private Dictionary<string, Field> _fields = new Dictionary<string, Field>();
     public (Field, bool) GetField(string name)
     {
@@ -228,98 +244,137 @@ public class Field
 
 public interface IError
 {
-
+    string GetMessage();
 }
 public class Error : IError
 {
-
+    private string _msg;
+    public Error(string msg)
+    {
+        _msg = msg;
+    }
+    public string GetMessage()
+    {
+        return _msg;
+    }
 }
+// TODO: hard typed errors/exceptions
+// TODO: pull params to dict 
+// TODO: dapper + sql raw examples 
+// TODO: pull out op mapper func from rql to sql to allow mongo or other.
+// TODO: column mapping 
 public class Parser
 {
-    private readonly FieldSpec _fieldspec;
-    // TODO: pull params to dict 
-    // TODO : dapper + sql raw examples 
-    public (StringBuilder, IError) ParseTerms(JContainer termContainer, StringBuilder query = null)
+    public Parser(FieldSpec fieldspec)
     {
-        if (termContainer == null) return (null, new Error()); //TODO: null container 
+        _fieldspec = fieldspec;
+    }
+    private readonly FieldSpec _fieldspec;
+    public (StringBuilder, IError) ParseTerms(JContainer termContainer, StringBuilder query = null, Field parentField = null)
+    {
+        if (termContainer == null) return (null, new Error("null container"));
         if (query == null) query = new StringBuilder("WHERE");
 
         var propCount = 0;
         foreach (var token in termContainer.Children())
         {
             var prop = token as JProperty;
-            if (propCount > 0 && propCount < termContainer.Count) query.Append(SqlOp.AND);
+            if (propCount > 0 && propCount < termContainer.Count) query.Append($" {SqlOp.AND} ");
             propCount++;
 
-            var (op, isOp) = RqlOp.TryParse(prop.Name);
-            var (sqlOp, isSqlOp) = SqlOp.TryParse(op);  // TODO: sql instruction abstraction 
-            if (isOp && !isSqlOp) return (null, new Error()); //TODO: unsupported sql op 
+            var (field, isField) = _fieldspec.GetField(prop.Name);
+            var nextTerm = prop.Value as JContainer;
 
-            // TODO: clean up if tree and continues 
-            if (isOp && op == RqlOp.OR || op == RqlOp.AND)
+            // Parse Field 
+            if (isField)
             {
-                // TODO: can handling of () + and/or appending be done at root via flag? 
-                var jArr = prop?.Values()?.ToArray();
-                for (var idx = 0; idx < jArr.Length; idx++)
+                // Right side of field is term, recursive call 
+                if (nextTerm != null)
                 {
-                    if (idx > 0 && idx != jArr.Length) query.Append(sqlOp);
-                    if (jArr.Length > 0) query.Append("(");
+                    ParseTerms(nextTerm, query, field);
+                }
+                // Right side is primitive and this is a root return 
+                else
+                {
+                    query.Append($" {prop.Name} ");
+                    var val = prop.Value as JValue;
+                    if (val == null) return (null, new Error("cannot cast to primitive, invalid value"));
 
-                    var childTerm = jArr[idx] as JContainer;
-                    ParseTerms(childTerm, query); // TODO: pass field spec for validation
+                    // TODO: use field spec to validate, format/convert value
+                    // TODO: add value to parameters map and add ? or @ token 
+                    query.Append($" {SqlOp.EQ} ");
+                    query.Append($" {val.ToString()} ");
+                }
 
-                    if (jArr.Length > 0) query.Append(")");
+                continue;
+            }
+
+            // Parse rql op
+            var (op, isOp) = RqlOp.TryParse(prop.Name);
+            if (isOp)
+            {
+                var (sqlOp, isSqlOp) = SqlOp.TryParse(op);
+                if (!isSqlOp) return (null, new Error("rql operation not supported in sql"));
+
+                // Right side of op is collection of terms recursive call
+                if (op == RqlOp.OR || op == RqlOp.AND)
+                {
+                    query.Append("(");
+                    if (nextTerm == null) return (null, new Error("expected collection of terms on right"));
+                    var jArr = prop?.Values()?.ToArray();
+                    for (var idx = 0; idx < jArr.Length; idx++)
+                    {
+                        if (idx > 0 && idx != jArr.Length) query.Append($" {sqlOp} ");
+                        if (jArr.Length > 0) query.Append("(");
+
+                        var childTerm = jArr[idx] as JContainer;
+                        ParseTerms(childTerm, query);
+
+                        if (jArr.Length > 0) query.Append(")");
+                    }
+                    query.Append(")");
+                }
+                // Right side is primitive collection and this is root return 
+                else if (op == RqlOp.IN || op == RqlOp.NIN)
+                {
+                    throw new NotImplementedException("IN + NIN not implemented");
+                }
+                // Right side is primitive and this is root return 
+                else
+                {
+                    if (parentField == null) return (null, new Error("missing expected field spec"));
+                    query.Append($" {parentField.Name} ");
+                    query.Append($" {sqlOp} ");
+                    var val = prop.Value as JValue;
+                    if (val == null) return (null, new Error("cannot cast to primitive, invalid value"));
+
+                    // TODO: use field spec to validate, format/convert value
+                    // TODO: add value to parameters map and add ? or @ token 
+                    query.Append($" {SqlOp.EQ} ");
+                    query.Append($" {val.ToString()} ");
                 }
                 continue;
             }
-            if (isOp)
-            {
-                // right is value 
-                query.Append(sqlOp);
-                // TODO: hard type from field spec + error out 
-                var val = prop.Value as JValue;
-                query.Append(val.ToString());
 
-            }
-            // TODO: var (field, isField) = _fieldspec.GetField(prop.Path);
-            var isField = true; // TODO: generate spec
-            if (!isOp && !isField) return (null, new Error()); // not field or op bad prop 
-            if (isField)
-            {
-                query.Append(prop.Name);
-                var val = prop.Value as JValue;
-                // TODO: hard type from field spec + error out 
-                if (val != null)
-                {
-                    query.Append(SqlOp.EQ);
-                    query.Append(val.ToString());
-                    continue;
-                }
-
-                var container = prop.Value as JContainer;
-                if (container != null)
-                {
-                    ParseTerms(container, query); // TODO: pass field spec for validation
-                    continue;
-                }
-                // invalid field? 
-            }
+            return (null, new Error("not valid rql operation or model field name, invalid property"));
         }
+
 
         return (query, null);
     }
+
     public (string, Dictionary<string, object>, IError) ParseQuery(string query)
     {
         try
         {
-            var jsonObject = JsonConvert.DeserializeObject(query) as JContainer;
+            var jsonObject = JsonConvert.DeserializeObject(query);
 
-            var (queryBuilder, err) = ParseTerms(jsonObject);
+            var (queryBuilder, err) = ParseTerms(jsonObject as JContainer);
             return (queryBuilder.ToString(), null, err);
         }
         catch (Exception e)
         {
-            return (null, null, new Error()); // CAUGHT exception likely from json
+            return (null, null, new Error(e.ToString())); // CAUGHT exception likely from json
         }
 
         /*
