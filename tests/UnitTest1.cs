@@ -29,7 +29,12 @@ namespace tests
         [Fact]
         public void Test1()
         {
-            var raw = @"{
+            var raw = @"{ 
+                        ""city5"":3,
+                        ""city1"": 2.0, 
+                        ""city2"": false, 
+                        ""city3"": ""true"", 
+                        ""city4"": ""1.0"", 
                         ""city"": ""TLV"", 
                         ""$or"": [
                                 { ""city"": ""TLV"" },
@@ -43,15 +48,30 @@ namespace tests
                 new Field{
                     Name= "city",
                 },
+                    new Field{
+                    Name= "city1",
+                },
+                    new Field{
+                    Name= "city2",
+                },
+                    new Field{
+                    Name= "city3",
+                },
+                    new Field{
+                    Name= "city4",
+                },
+                new Field{
+                    Name= "city5",
+                },
                 new Field{
                     Name = "account",
                 },
             };
-            // var spec = new FieldSpec(fields);
-            // var p = new Parser(spec);
+            var spec = new FieldSpec(fields);
+            var p = new Parser(spec);
 
-            // var (str, parms, error) = p.ParseQuery(raw);
-            // Console.WriteLine(str, parms, error);
+            var (str, parms, error) = p.ParseQuery(raw);
+            Console.WriteLine(str, parms, error);
 
             // "WHERE city  =  TLV  AND (( city  =  TLV ) OR ( city  =  NYC )) AND  account  LIKE  =   % github %  "
         }
@@ -231,15 +251,23 @@ public class TestClass
     public TestClass2 T_SubClass { get; set; }
 }
 
+
 public class FieldSpec<T> : FieldSpec
 {
     public FieldSpec() : base(typeof(T)) { }
 }
 public class FieldSpec
 {
+    public FieldSpec(IEnumerable<Field> fields)
+    {
+        _fields = fields.ToDictionary(x => x.Name, x => x);
+    }
+
     private FieldSpec() { }
     public FieldSpec(Type t)
     {
+        _fields = new Dictionary<string, Field>() { };
+
         var properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
         // if (property.GetCustomAttributes(true)
@@ -248,7 +276,7 @@ public class FieldSpec
 
         //  _fields = fields.ToDictionary(f => f.Name, f => f);
     }
-    private Dictionary<string, Field> _fields = new Dictionary<string, Field>();
+    private Dictionary<string, Field> _fields;
     public (Field, bool) GetField(string name)
     {
         if (name == null || name.Trim().Length <= 0)
@@ -263,12 +291,85 @@ public class FieldSpec
         return (field, didGet);
     }
 }
+
+
+public class DefaultTypeValidator
+{
+    private static Dictionary<Type, HashSet<Type>> _typeMap = new Dictionary<Type, HashSet<Type>> {
+        {
+            typeof(bool),
+            new HashSet<Type>
+            {
+                typeof(bool)
+            }
+        },
+        {
+            typeof(Int64),
+            new HashSet<Type>
+            {
+                typeof(sbyte),
+                typeof(byte),
+                typeof(Int16),
+                typeof(Int32) ,
+                typeof(Int64) ,
+                typeof(UInt16) ,
+                typeof(UInt64) ,
+                typeof(Single),
+                typeof(Double),
+                typeof(Decimal),
+            }
+        },
+        {
+            typeof(Double),
+            new HashSet<Type>
+            {
+                typeof(Single),
+                typeof(Double),
+                typeof(Decimal),
+            }
+        },
+        {
+            typeof(DateTime),
+            new HashSet<Type>
+            {
+                typeof(DateTime),
+            }
+        },
+        {
+            typeof(string),
+            new HashSet<Type>
+            {
+                typeof(string),
+                typeof(char[]),
+                typeof(IEnumerable<char>),
+            }
+        }
+    };
+    public IError Validate(Type propType, object value)
+    {
+        // TODO: null, datetime string?, unix time 
+        if (value == null) { } // TOOD: 
+        var objType = value.GetType();
+        var expectedTypes = _typeMap[objType];
+
+        var isValid = expectedTypes.Contains(propType);
+        if (!isValid) return new Error("Invalid type");
+        return null;
+    }
+
+    public (object, IError) Convert(string PropName, Type propType, object value)
+    {
+        return (value, null);
+    }
+}
+
 public class Field
 {
     public string Name { get; set; }
-    // Expected type
-    // custom converter
-    // Validator ? 
+    public IEnumerable<string> Ops { get; set; }
+    public Type PropType { get; set; }
+    public Func<object, IError> Validator { get; set; }
+    public Func<string, Type, object, (object, IError)> Converter { get; set; }
 }
 
 public interface IError
@@ -349,9 +450,32 @@ public class Parser
                 else
                 {
                     query.Append($" {prop.Name} ");
-                    var val = prop.Value as JValue;
-                    if (val == null) return (null, new Error("cannot cast to primitive, invalid value"));
+                    var valWrapper = prop.Value as JValue;
+                    if (valWrapper == null) return (null, new Error("cannot cast to primitive, invalid value"));
 
+                    var val = valWrapper.Value;
+                    if (field.Converter != null)
+                    {
+                        var (v, err) = field.Converter(field.Name, field.PropType, val);
+                        if (err != null)
+                        {
+                            // TODO: convert error return 
+                        }
+                        val = v;
+                    }
+
+                    if (field.Validator != null)
+                    {
+                        var err = field.Validator(val);
+                        if (err != null)
+                        {
+                            // TODO: validator error 
+                        }
+                    }
+                    else
+                    {
+                        // TODO: use default validator 
+                    }
                     // TODO: use field spec to validate, format/convert value
                     // TODO: add value to parameters map and add ? or @ token 
                     query.Append($" {SqlOp.EQ} ");
