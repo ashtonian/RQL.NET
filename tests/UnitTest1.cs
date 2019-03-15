@@ -313,6 +313,7 @@ public class Error : IError
 // TODO: convert enum classes to const
 // TODO: investigate json ops
 // TODO: dynamic spec so that it doesn't have to be global for the same struct, sometimes might not want that.
+// TODO: c# 7.0 is expressions https://www.danielcrabtree.com/blog/152/c-sharp-7-is-operator-patterns-you-wont-need-as-as-often
 public class Parser
 {
     private readonly IOpMapper _opMapper;
