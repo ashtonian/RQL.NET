@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -14,10 +15,8 @@ namespace tests
         [Fact]
         public void TestFieldSpec()
         {
-
-
-            var spec = new FieldSpec(typeof(TestClass));
-            var spec2 = new FieldSpec<TestClass>();
+            var spec = new ClassSpec(typeof(TestClass));
+            var spec2 = new ClassSpec<TestClass>();
 
             // var p = new Parser(spec);
 
@@ -44,30 +43,30 @@ namespace tests
                 		}
                   ";
 
-            var fields = new List<Field> {
-                new Field{
+            var fields = new List<FieldSpec> {
+                new FieldSpec{
                     Name= "city",
                 },
-                    new Field{
+                    new FieldSpec{
                     Name= "city1",
                 },
-                    new Field{
+                    new FieldSpec{
                     Name= "city2",
                 },
-                    new Field{
+                    new FieldSpec{
                     Name= "city3",
                 },
-                    new Field{
+                    new FieldSpec{
                     Name= "city4",
                 },
-                new Field{
+                new FieldSpec{
                     Name= "city5",
                 },
-                new Field{
+                new FieldSpec{
                     Name = "account",
                 },
             };
-            var spec = new FieldSpec(fields);
+            var spec = new ClassSpec(fields);
             var p = new Parser(spec);
 
             var (str, parms, error) = p.ParseQuery(raw);
@@ -76,95 +75,6 @@ namespace tests
             // "WHERE city  =  TLV  AND (( city  =  TLV ) OR ( city  =  NYC )) AND  account  LIKE  =   % github %  "
         }
 
-    }
-}
-
-// TODO:
-/*  Attributes
-    CustomTypeConverter
-    CustomValidator
-*/
-
-[AttributeUsage(AttributeTargets.Class)]
-public class Filterable : System.Attribute
-{
-    private string[] _props;
-    public Filterable(params string[] props) { _props = props; }
-}
-
-[AttributeUsage(AttributeTargets.Class)]
-public class Sortable : System.Attribute
-{
-    private string[] _props;
-    public Sortable(params string[] props) { _props = props; }
-}
-
-[AttributeUsage(AttributeTargets.Property)]
-public class Ignore : System.Attribute
-{
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Sort : System.Attribute { }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Filter : System.Attribute { }
-}
-public class Ops
-{
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Allowed : System.Attribute
-    {
-        private string[] _ops;
-        public Allowed(params string[] ops) { _ops = ops; }
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Disallowed : System.Attribute
-    {
-        private string[] _ops;
-        public Disallowed(params string[] ops) { _ops = ops; }
-    }
-}
-
-[AttributeUsage(AttributeTargets.Property)]
-public class ColumnName : System.Attribute
-{
-    private string _name;
-    public ColumnName(string name) { _name = name; }
-}
-
-public static class SqlOp
-{
-    public const string EQ = "=";
-    public const string NEQ = "!=";
-    public const string LT = "<";
-    public const string GT = ">";
-    public const string LTE = "<=";
-    public const string GTE = ">=";
-    public const string LIKE = "LIKE";
-    public const string OR = "OR";
-    public const string AND = "AND";
-    public const string NIN = "NOT IN";
-    public const string IN = "IN";
-    private static readonly HashSet<string> _SqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        {EQ},
-        {NEQ},
-        {LT},
-        {GT},
-        {LTE},
-        {GTE},
-        {LIKE},
-        {OR},
-        {AND},
-        {NIN},
-        {IN},
-    };
-
-    public static bool IsOp(string val)
-    {
-        if (val == null || val.Trim().Length < 0) return false;
-
-        return _SqlOps.Contains(val);
     }
 }
 
@@ -198,42 +108,6 @@ public class SqlMapper : IOpMapper
     }
 }
 
-public static class RqlOp
-{
-    public const string EQ = "$eq";
-    public const string NEQ = "$neq";
-    public const string LT = "$lt";
-    public const string GT = "$gt";
-    public const string LTE = "$lte";
-    public const string GTE = "$gte";
-    public const string LIKE = "$like";
-    public const string OR = "$or";
-    public const string AND = "$and";
-    public const string NIN = "$nin";
-    public const string IN = "$in";
-    private static readonly HashSet<string> _rqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        {EQ},
-        {NEQ},
-        {LT},
-        {GT},
-        {LTE},
-        {GTE},
-        {LIKE},
-        {OR},
-        {AND},
-        {NIN},
-        {IN},
-    };
-
-    public static bool IsOp(string val)
-    {
-        if (val == null || val.Trim().Length < 0) return false;
-
-        return _rqlOps.Contains(val);
-    }
-}
-
 public class TestClass2
 {
     public int X_Int { get; set; }
@@ -251,22 +125,11 @@ public class TestClass
     public TestClass2 T_SubClass { get; set; }
 }
 
-
-public class FieldSpec<T> : FieldSpec
+public class ClassSpecBuilder
 {
-    public FieldSpec() : base(typeof(T)) { }
-}
-public class FieldSpec
-{
-    public FieldSpec(IEnumerable<Field> fields)
+    public ClassSpec Build(Type t)
     {
-        _fields = fields.ToDictionary(x => x.Name, x => x);
-    }
-
-    private FieldSpec() { }
-    public FieldSpec(Type t)
-    {
-        _fields = new Dictionary<string, Field>() { };
+        var _fields = new Dictionary<string, FieldSpec>() { };
 
         var properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
@@ -275,119 +138,32 @@ public class FieldSpec
         // continue;
 
         //  _fields = fields.ToDictionary(f => f.Name, f => f);
-    }
-    private Dictionary<string, Field> _fields;
-    public (Field, bool) GetField(string name)
-    {
-        if (name == null || name.Trim().Length <= 0)
-        {
-            return (null, false);
-        }
-
-        name = name.ToLower();
-        Field field;
-        var didGet = _fields.TryGetValue(name, out field);
-
-        return (field, didGet);
+        return new ClassSpec();
     }
 }
-
-
-public class DefaultTypeValidator
+public class ClassSpecResolver
 {
-    private static Dictionary<Type, HashSet<Type>> _typeMap = new Dictionary<Type, HashSet<Type>> {
-        {
-            typeof(bool),
-            new HashSet<Type>
-            {
-                typeof(bool)
-            }
-        },
-        {
-            typeof(Int64),
-            new HashSet<Type>
-            {
-                typeof(sbyte),
-                typeof(byte),
-                typeof(Int16),
-                typeof(Int32) ,
-                typeof(Int64) ,
-                typeof(UInt16) ,
-                typeof(UInt64) ,
-                typeof(Single),
-                typeof(Double),
-                typeof(Decimal),
-            }
-        },
-        {
-            typeof(Double),
-            new HashSet<Type>
-            {
-                typeof(Single),
-                typeof(Double),
-                typeof(Decimal),
-            }
-        },
-        {
-            typeof(DateTime),
-            new HashSet<Type>
-            {
-                typeof(DateTime),
-            }
-        },
-        {
-            typeof(string),
-            new HashSet<Type>
-            {
-                typeof(string),
-                typeof(char[]),
-                typeof(IEnumerable<char>),
-            }
-        }
-    };
-    public IError Validate(Type propType, object value)
-    {
-        // TODO: null, datetime string?, unix time 
-        if (value == null) { } // TOOD: 
-        var objType = value.GetType();
-        var expectedTypes = _typeMap[objType];
 
-        var isValid = expectedTypes.Contains(propType);
-        if (!isValid) return new Error("Invalid type");
-        return null;
-    }
-
-    public (object, IError) Convert(string PropName, Type propType, object value)
-    {
-        return (value, null);
-    }
 }
 
-public class Field
+public class ClassSpec
+{
+    public Dictionary<string, FieldSpec> Fields { get; set; }
+    public Func<string, Type, object, IError> Validator { get; set; }
+    public Func<string, Type, object, (object, IError)> Converter { get; set; }
+    public Func<string, string> ColumnNamer { get; set; }
+}
+
+public class FieldSpec
 {
     public string Name { get; set; }
+    public string ColumnName { get; set; }
     public IEnumerable<string> Ops { get; set; }
     public Type PropType { get; set; }
-    public Func<object, IError> Validator { get; set; }
+    public Func<string, Type, object, IError> Validator { get; set; }
     public Func<string, Type, object, (object, IError)> Converter { get; set; }
 }
 
-public interface IError
-{
-    string GetMessage();
-}
-public class Error : IError
-{
-    private string _msg;
-    public Error(string msg)
-    {
-        _msg = msg;
-    }
-    public string GetMessage()
-    {
-        return _msg;
-    }
-}
 
 // TODO: cache reflection 
 // TODO: hard typed errors/exceptions
@@ -415,71 +191,88 @@ public class Error : IError
 // TODO: investigate json ops
 // TODO: dynamic spec so that it doesn't have to be global for the same struct, sometimes might not want that.
 // TODO: c# 7.0 is expressions https://www.danielcrabtree.com/blog/152/c-sharp-7-is-operator-patterns-you-wont-need-as-as-often
+// TODO: deal with tokenizer state and parse() should be static. 
+// TODO: feature - class level default validator, converter 
+// TODO: class spec should contain all relevant information required to parse a given class the generation of such class should be extracted, I think this is the cache point, can pass in for one off. 
+
+
+public class ParseResult
+{
+    public int Limit { get; set; }
+    public int Offset { get; set; }
+    public string SortExpression { get; set; }
+    public string FilterExpression { get; set; }
+    public Dictionary<string, object> FilterParameters { get; set; }
+    public IEnumerable<IErrors> Errors { get; set; }
+}
+
+
+public class ResultState
+{
+    public Dictionary<string, object> FilterParameters { get; set; }
+    public List<IErrors> Errors { get; set; }
+    public StringBuilder Query { get; set; }
+
+}
+
 public class Parser
 {
-    private readonly IOpMapper _opMapper;
-    public Parser(FieldSpec fieldspec)
-    {
-        _fieldspec = fieldspec;
-    }
-    private readonly FieldSpec _fieldspec;
-    public (StringBuilder, IError) ParseTerms(JContainer termContainer, StringBuilder query = null, Field parentField = null)
-    {
-        if (termContainer == null) return (null, new Error("null container"));
-        if (query == null) query = new StringBuilder("WHERE");
+    public Func<IParameterTokenizer> TokenizerFactory { get; set; }
+    public ClassSpec ClassSpec { get; set; }
+    public Func<string, (string, bool)> OpResolver { get; set; }
 
-        var propCount = 0;
-        foreach (var token in termContainer.Children())
+    private static ParseResult ParseTerms(
+        Parser parser,
+        JContainer container,
+        string parentToken = null,
+        IParameterTokenizer tokenizer = null,
+        ResultState res = null
+    )
+    {
+        if (res == null) { res = new ResultState() { }; }
+        if (tokenizer == null) { parser.TokenizerFactory(); }
+
+        var fieldCount = 0;
+        foreach (var raw in container.Children())
         {
-            var prop = token as JProperty;
-            if (propCount > 0 && propCount < termContainer.Count) query.Append($" {SqlOp.AND} ");
-            propCount++;
+            var token = raw as JProperty;
+            // TODO:  if (fieldCount > 0 && fieldCount < termContainer.Count) query.Append($" {SqlOp.AND} ");
+            fieldCount++;
 
-            var (field, isField) = _fieldspec.GetField(prop.Name);
-            var nextTerm = prop.Value as JContainer;
+            var field = parser.ClassSpec.Fields[token.Name.Trim()];
+            var nextTerm = token.Value as JContainer;
 
             // Parse Field 
-            if (isField)
+            if (field != null)
             {
                 // Right side of field is term, recursive call 
                 if (nextTerm != null)
                 {
-                    ParseTerms(nextTerm, query, field);
+                    ParseTerms(parser, nextTerm, token.Name.Trim(), tokenizer, res);
                 }
-                // Right side is primitive and this is a root return 
+                // Right side is primitive and this is a return statement
                 else
                 {
-                    query.Append($" {prop.Name} ");
-                    var valWrapper = prop.Value as JValue;
-                    if (valWrapper == null) return (null, new Error("cannot cast to primitive, invalid value"));
+                    var columnName = field.ColumnName ?? parser.ClassSpec.ColumnNamer(field.Name);
+                    res.Query.Append($" {columnName} ");
 
-                    var val = valWrapper.Value;
-                    if (field.Converter != null)
+                    var jValue = token.Value as JValue;
+                    if (jValue == null)
                     {
-                        var (v, err) = field.Converter(field.Name, field.PropType, val);
-                        if (err != null)
-                        {
-                            // TODO: convert error return 
-                        }
-                        val = v;
+                        res.Errors.Add(new Error("Unable to cast right side as primitive"));
+                        continue;
                     }
 
-                    if (field.Validator != null)
+                    var (key, val, err) = getParameter(field, jValue.Value, tokenizer, parser.ClassSpec.Converter, parser.ClassSpec.Validator);
+                    if (err != null)
                     {
-                        var err = field.Validator(val);
-                        if (err != null)
-                        {
-                            // TODO: validator error 
-                        }
+                        res.Errors.Add(err);
+                        continue;
                     }
-                    else
-                    {
-                        // TODO: use default validator 
-                    }
-                    // TODO: use field spec to validate, format/convert value
-                    // TODO: add value to parameters map and add ? or @ token 
-                    query.Append($" {SqlOp.EQ} ");
-                    query.Append($" {val.ToString()} ");
+                    res.FilterParameters.Add(key, val);
+
+                    res.Query.Append($" {parser.OpResolver(RqlOp.EQ)} ");
+                    res.Query.Append($" {key} ");
                 }
 
                 continue;
@@ -524,11 +317,10 @@ public class Parser
                     query.Append($" {sqlOp} ");
                     var val = prop.Value as JValue;
                     if (val == null) return (null, new Error("cannot cast to primitive, invalid value"));
+                    var paramToken = "";
 
-                    // TODO: use field spec to validate, format/convert value
-                    // TODO: add value to parameters map and add ? or @ token 
-                    query.Append($" {SqlOp.EQ} ");
-                    query.Append($" {val.ToString()} ");
+                    // query.Append($" {SqlOp.EQ} "); // TODO: don't always add 
+                    query.Append($" {paramToken} ");
                 }
                 continue;
             }
@@ -538,6 +330,38 @@ public class Parser
 
 
         return (query, null);
+    }
+
+
+
+
+    private static (string, object, IError) getParameter(
+        FieldSpec field,
+        object val,
+        IParameterTokenizer _tokenizer,
+        Func<string, Type, object, (object, IError)> _defaultConverter = null,
+        Func<string, Type, object, IError> _defaultValidator = null
+    )
+    {
+        var converter = field.Converter ?? _defaultConverter;
+
+        if (converter != null)
+        {
+            var (v, err) = converter(field.Name, field.PropType, val);
+            if (err != null) return (null, null, err);
+            val = v;
+        }
+
+        var validator = field.Validator ?? _defaultValidator;
+        if (validator != null)
+        {
+            var err = validator(field.Name, field.PropType, val);
+            if (err != null) return (null, null, err);
+        }
+
+        var parameterName = _tokenizer.GetToken(field.Name, field.PropType);
+
+        return (parameterName, val, null);
     }
 
     public (string, Dictionary<string, object>, IError) ParseQuery(string query)
