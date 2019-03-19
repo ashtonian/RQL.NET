@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 public interface IParameterTokenizer
@@ -37,7 +38,9 @@ public class NamedTokenizer : IParameterTokenizer
 
     public string GetToken(string fieldName, Type propType)
     {
-        _propCount[fieldName]++;
+        _propCount.TryGetValue(fieldName, out var currentCount);
+        _propCount[fieldName] = currentCount + 1;
+
         if (_propCount[fieldName] > 1) return $"{_tokenPrefix}{fieldName}{_propCount[fieldName]}";
         return $"{_tokenPrefix}{fieldName}";
     }
