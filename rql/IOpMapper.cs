@@ -66,6 +66,8 @@ public class SqlMapper : IOpMapper
             RqlOp.GTE,
             RqlOp.OR,
             RqlOp.AND,
+            RqlOp.IN,
+            RqlOp.NIN,
         };
         if (strings.Contains(type)) return new HashSet<string> {
             RqlOp.EQ,
@@ -73,6 +75,8 @@ public class SqlMapper : IOpMapper
             RqlOp.LIKE,
             RqlOp.OR,
             RqlOp.AND,
+            RqlOp.IN,
+            RqlOp.NIN,
         };
         if (bools.Contains(type)) return new HashSet<string> {
             RqlOp.EQ,
@@ -89,6 +93,8 @@ public class SqlMapper : IOpMapper
             RqlOp.GTE,
             RqlOp.OR,
             RqlOp.AND,
+            RqlOp.IN,
+            RqlOp.NIN,
          };
         return null;
     }

@@ -23,11 +23,33 @@ public class ClassSpec
 
 public class ClassSpecBuilder
 {
-    private static Func<string, Type, object, IError> defaultValidiator = new DefaultTypeValidator().Validate; // Todo config static fields? 
-    private static Func<string, string> defaultColumnNamer = new Func<string, string>(x => x);
-    private static Func<string, string> defaultFieldNamer = new Func<string, string>(x => Char.ToLowerInvariant(x[0]) + x.Substring(1));
-    private static IOpMapper defaultOpMapper = new SqlMapper();
-    private static Dictionary<Type, ClassSpec> typeCache = new Dictionary<Type, ClassSpec>();
+    private static readonly Func<string, Type, object, IError> defaultValidiator = new DefaultTypeValidator().Validate; // Todo config static readonly fields? 
+    private static readonly Func<string, string> defaultColumnNamer = new Func<string, string>(x => x);
+    private static readonly Func<string, string> defaultFieldNamer = new Func<string, string>(x => Char.ToLowerInvariant(x[0]) + x.Substring(1));
+    private static readonly IOpMapper defaultOpMapper = new SqlMapper();
+    private static readonly Dictionary<Type, ClassSpec> typeCache = new Dictionary<Type, ClassSpec>();
+    private static readonly Func<string, Type, object, (object, IError)> defaultConverter =
+        new Func<string, Type, object, (object, IError)>(
+            (FieldName, type, raw) =>
+            {
+                if (type == typeof(DateTime) && type != raw.GetType())
+                {
+                    switch (raw)
+                    {
+                        case long longVal:
+                            var dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(longVal);
+                            return (dateTimeOffset.DateTime, null);
+                        case string strVal:
+                            DateTime result;
+                            var success = DateTime.TryParse(strVal, out result);
+                            if (!success) return (null, new Error("unable to convert datetime"));
+                            return (result, null);
+                    }
+                }
+                return (raw, null);
+            }
+        );
+
     private readonly Func<string, string> columnNamer;
     private readonly Func<string, string> fieldNamer;
     private readonly IOpMapper opMapper;
@@ -70,7 +92,7 @@ public class ClassSpecBuilder
                 PropType = p.PropertyType,
                 ColumnName = columnName?._name ?? (columnNamer != null ? columnNamer(p.Name) : defaultColumnNamer(p.Name)),
                 Name = fieldName?._name ?? (fieldName != null ? fieldNamer(p.Name) : defaultFieldNamer(p.Name)),
-                Converter = null,               // ?? attribute that looks for IConverter on field, then class
+                Converter = p.PropertyType == typeof(DateTime) ? defaultConverter : null,               // ?? attribute that looks for IConverter on field, then class
                 Validator = null,               // ?? attribute that looks for IValidator on field, then class
             };
             _fields.Add(_field.Name, _field);

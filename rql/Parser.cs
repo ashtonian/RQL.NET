@@ -132,6 +132,7 @@ public class Parser
     {
         if (container == null) { } // invalid rigt side or json serialiize
         if (state == null) { state = new ParseState(parser._tokenizerFactory()); };
+        // { ""t_String"": { ""$like"":"" % testing % "", ""$neq"" : ""test""} },                                
 
         var idx = -1;
         foreach (var raw in container.Children())
@@ -145,6 +146,14 @@ public class Parser
                 if (parentToken == RqlOp.OR || parentToken == RqlOp.AND) state._query.Append($"{parser._opResolver(parentToken)} ");
                 else if (parentToken == RqlOp.NOT) state._query.Append($"{parser._opResolver(RqlOp.AND)} ");
                 else if (parentToken == RqlOp.NOR) state._query.Append($"{parser._opResolver(RqlOp.OR)} ");
+            }
+            else if (idx > 0 && idx < container.Count)
+            {
+                // TODO: merge with upper if 
+                // TODO: fix so that [] are ORed and {} are objects 
+                // TODO: validate $or:[] and $and:{}
+                // container.Type == Object vs container.Type == JArray 
+                state._query.Append($"{parser._opResolver(RqlOp.AND)} ");
             }
 
             var field = parser._classSpec.Fields.ContainsKey(leftSide) ? parser._classSpec.Fields[leftSide] : null;
@@ -210,9 +219,14 @@ public class Parser
         state._query.Append($"{fieldSpec.ColumnName} {sqlOp} {key} ");
     }
 
-    private static object prepPrim(JProperty jToken, bool isArray = false)
+    private static object prepPrim(JProperty jToken, bool expectArray = false)
     {
-        if (isArray) throw new NotImplementedException();
+        if (expectArray)
+        {
+            var jArray = jToken.Value as JArray;
+            var res = jArray.Select(x => x as JValue).Select(x => x.Value).ToList();
+            return res;
+        }
 
         var jProp = jToken.Value as JProperty;
         var jValue = (jProp?.Value ?? jToken?.Value) as JValue;
