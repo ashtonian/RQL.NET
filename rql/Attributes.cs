@@ -1,5 +1,12 @@
 using System;
 
+
+// TODO:
+/*  Attributes
+    CustomTypeConverter
+    CustomValidator
+*/
+
 [AttributeUsage(AttributeTargets.Class)]
 public class Filterable : System.Attribute
 {
@@ -48,11 +55,3 @@ public class FieldName : System.Attribute
     internal string _name;
     public FieldName(string name) { _name = name; }
 }
-
-
-// TODO:
-/*  Attributes
-    CustomTypeConverter
-    CustomValidator
-    FieldName? 
-*/

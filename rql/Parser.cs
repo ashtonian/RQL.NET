@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
     pull out json deserializer and use own tree {left, v, right, isField, isOp...}
     js + typescript lib
     investigate json ops
-    validate not + and right side is object and, or/nor is array
+    validate and right side is object and, or/nor is array
  */
 
 
@@ -39,27 +39,54 @@ internal class ParseState
     public readonly IParameterTokenizer _parameterTokenizer;
 }
 
-public class Parser
+public class Parser<T> : Parser, IParseRql<T>
+{
+    public Parser(
+        Func<string, string> opResolver = null,
+        Func<IParameterTokenizer> tokenizerFactory = null
+    )
+    : base(
+        new ClassSpecBuilder().Build(typeof(T)),
+        opResolver,
+        tokenizerFactory
+        )
+    {
+    }
+}
+
+public interface IParseRql<T> : IParseRql
+{
+
+}
+public interface IParseRql
+{
+    (ParseResult, IEnumerable<IError>) Parse(string toParse);
+}
+public class Parser : IParseRql
 {
     private readonly Func<IParameterTokenizer> _tokenizerFactory;
     private readonly ClassSpec _classSpec;
     private readonly Func<string, string> _opResolver;
 
-    public Parser(ClassSpec classSpec, Func<string, string> opResolver, Func<IParameterTokenizer> tokenizerFactory)
+    public Parser(ClassSpec classSpec, Func<string, string> opResolver = null, Func<IParameterTokenizer> tokenizerFactory = null)
     {
+        if (tokenizerFactory == null)
+        {
+            tokenizerFactory = Defaults.DefaultTokenizerFactory;
+        }
+        if (opResolver == null)
+        {
+            opResolver = Defaults.DefaultOpMapper.GetDbOp;
+        }
         _tokenizerFactory = tokenizerFactory;
         _classSpec = classSpec;
         _opResolver = opResolver;
     }
 
+
     public static (ParseResult, IEnumerable<IError>) Parse<T>(string toParse)
     {
-        var builder = new ClassSpecBuilder();
-
-        var classSpec = builder.Build(typeof(T));
-
-        var parser = new Parser(classSpec, new SqlMapper().GetDbOp, () => { return new NamedTokenizer(); });
-
+        var parser = new Parser<T>();
         return parser.Parse(toParse);
     }
 

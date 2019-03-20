@@ -57,6 +57,7 @@ public class DefaultTypeValidator
             }
         }
     };
+
     public IError Validate(string propName, Type propType, object value)
     {
         // TODO: null, datetime string?, unix time?

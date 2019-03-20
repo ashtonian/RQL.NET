@@ -29,11 +29,11 @@ namespace tests
 
     public class ParserTests
     {
+
         [Fact]
         public void Play()
         {
-            // var outing = JsonConvert.SerializeObject(DateTimeOffset.Now.ToUnixTimeSeconds());
-            // Console.WriteLine(outing);
+            IParseRql<TestClass> test = new Parser<TestClass>();
         }
 
         [Fact]

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+    <metadata>
+        <id>Rql.NET</id>
+        <version>0.1-beta</version>
+        <authors>Ashton Kinslow</authors>
+        <owners>ashtonian</owners>
+        <projectUrl>https://github.com/Ashtonian/Rql.NET</projectUrl>
+        <license type="MIT"/>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <!-- <releaseNotes>Bug fixes and performance improvements</releaseNotes> -->
+        <!-- <description>Core utility functions for web applications</description> -->
+        <tags>web utility json url rql sql query dynamic builder parsing</tags>
+    </metadata>
+</package>
