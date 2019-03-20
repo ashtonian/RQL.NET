@@ -10,6 +10,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\rql\rql.csproj" />
+    <ProjectReference Include="..\Rql.NET\Rql.NET.csproj" />
   </ItemGroup>
-</Project>
+</Project> 

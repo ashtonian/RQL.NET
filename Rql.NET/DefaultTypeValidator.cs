@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class DefaultTypeValidator
+namespace Rql.NET
 {
-    private static Dictionary<Type, HashSet<Type>> _typeMap = new Dictionary<Type, HashSet<Type>> {
+    public class DefaultTypeValidator
+    {
+        private static Dictionary<Type, HashSet<Type>> _typeMap = new Dictionary<Type, HashSet<Type>> {
         {
             typeof(bool),
             new HashSet<Type>
@@ -58,28 +60,29 @@ public class DefaultTypeValidator
         }
     };
 
-    public IError Validate(string propName, Type propType, object value)
-    {
-        // TODO: null, datetime string?, unix time?
-        if (value == null) { } // TODO: 
-        var objList = value as IEnumerable<Object>;
-        if (objList != null)
+        public IError Validate(string propName, Type propType, object value)
         {
-            foreach (var v in objList)
+            // TODO: null, datetime string?, unix time?
+            if (value == null) { } // TODO: 
+            var objList = value as IEnumerable<Object>;
+            if (objList != null)
             {
-                var objType2 = v.GetType();
-                var expectedTypes2 = _typeMap[objType2];
-                var isValid2 = expectedTypes2.Contains(propType);
-                if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2.ToString()}, found: {objType2}");
+                foreach (var v in objList)
+                {
+                    var objType2 = v.GetType();
+                    var expectedTypes2 = _typeMap[objType2];
+                    var isValid2 = expectedTypes2.Contains(propType);
+                    if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2.ToString()}, found: {objType2}");
+                }
+                return null;
             }
+
+            var objType = value.GetType();
+            var expectedTypes = _typeMap[objType];
+            var isValid = expectedTypes.Contains(propType);
+            if (!isValid) return new Error($"Invalid type Expected:{expectedTypes.ToString()}, found: {objType}");
+
             return null;
         }
-
-        var objType = value.GetType();
-        var expectedTypes = _typeMap[objType];
-        var isValid = expectedTypes.Contains(propType);
-        if (!isValid) return new Error($"Invalid type Expected:{expectedTypes.ToString()}, found: {objType}");
-
-        return null;
     }
 }

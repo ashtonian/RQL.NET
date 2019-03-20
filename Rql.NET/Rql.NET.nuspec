@@ -2,14 +2,17 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>Rql.NET</id>
-        <version>0.1-beta</version>
+        <version>0.0.3-beta</version>
         <authors>Ashton Kinslow</authors>
         <owners>ashtonian</owners>
         <projectUrl>https://github.com/Ashtonian/Rql.NET</projectUrl>
-        <license type="MIT"/>
+        <license type="expression">MIT</license>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <!-- <releaseNotes>Bug fixes and performance improvements</releaseNotes> -->
-        <!-- <description>Core utility functions for web applications</description> -->
+        <dependencies>
+            <dependency id="Newtonsoft.Json" version="[12.0.1,13.0)" />
+        </dependencies>
+        <description>RQL is a resource query language for REST. It provides a simple and light-weight API for adding dynamic querying capabilities to web-applications that use SQL-based database.</description>
         <tags>web utility json url rql sql query dynamic builder parsing</tags>
     </metadata>
 </package>
