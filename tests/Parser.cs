@@ -86,6 +86,7 @@ namespace tests
         public void SimpleAnd()
         {
             var raw = @"{   
+                        ""filter"": { 
                             ""t_Long"": 3,
                             ""t_Int"": 2, 
                             ""t_Float"": 3.4, 
@@ -94,6 +95,7 @@ namespace tests
                             ""t_DateTime"" : ""2019-03-20T01:21:25.467589-05:00"",
                             ""t_DateTime2"" : 1553063286
                         }
+                    }
             ";
             var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);

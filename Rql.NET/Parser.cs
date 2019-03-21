@@ -31,7 +31,7 @@ namespace Rql.NET
         public int GetPage()
         {
             if (Offset <= 0 || Offset < Limit) return 1;
-            return (int) Math.Floor(Offset / (double) Limit) + 1;
+            return (int)Math.Floor(Offset / (double)Limit) + 1;
         }
     }
 
@@ -45,7 +45,7 @@ namespace Rql.NET
         public int GetPage()
         {
             if (Offset <= 0 || Offset < Limit) return 1;
-            return (int) Math.Floor(Offset / (double) Limit) + 1;
+            return (int)Math.Floor(Offset / (double)Limit) + 1;
         }
     }
 
@@ -113,10 +113,14 @@ namespace Rql.NET
             var offset = json["Offset"]?.Value<int>() ?? json["offset"]?.Value<int>() ?? Defaults.Offset;
             var limit = json["Limit"]?.Value<int>() ?? json["limit"]?.Value<int>() ?? Defaults.Limit;
             var sort = json["Sort"] ?? json["sort"];
-            var (sortExp, errs) = ParseSort(sort, _opResolver, _classSpec);
+
+            var (sortExp, errs) = sort == null ? ("", new List<IError>()) : ParseSort(sort, _opResolver, _classSpec);
 
             var filterRaw = json["Filter"] ?? json["filter"];
-            var (filter, parameters, errors) = ParseTerms(this, filterRaw as JContainer, RqlOp.AND);
+            var filterContainer = filterRaw as JContainer;
+            var (filter, parameters, errors) = filterContainer == null ?
+                ("", new Dictionary<string, object>(), null) : ParseTerms(this, filterContainer, RqlOp.AND);
+
             if (errors != null) errs.AddRange(errors);
             return (
                 new DbExpression
@@ -125,7 +129,7 @@ namespace Rql.NET
                     Parameters = parameters,
                     Offset = offset,
                     Limit = limit,
-                    Sort = string.Join(Defaults.SortSeparator, sortExp).Trim()
+                    Sort = sortExp,
                 },
                 errs.Any() ? errs : null
             );
@@ -150,13 +154,13 @@ namespace Rql.NET
             return Parse(raw);
         }
 
-        private static (List<string>, List<IError>) ParseSort(JToken sort, Func<string, string> opResolver,
+        private static (string, List<IError>) ParseSort(JToken sort, Func<string, string> opResolver,
             ClassSpec classSpec)
         {
             var sortArry = sort?.ToList();
             var sortOut = new List<string>();
             var errs = new List<IError>();
-            if (sortArry == null) return (sortOut, errs);
+            if (sortArry == null) return ("", errs);
 
             foreach (var s in sortArry)
             {
@@ -180,7 +184,7 @@ namespace Rql.NET
                 sortOut.Add($"{fieldSpec.ColumnName} {sqlSort} ");
             }
 
-            return (sortOut, errs);
+            return (string.Join(Defaults.SortSeparator, sortOut).Trim(), errs);
         }
 
         private static (string, Dictionary<string, object> FilterParameters, IEnumerable<IError>) ParseTerms(

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Rql.NET
 {
-    public class DefaultTypeValidator
+    public static class DefaultTypeValidator
     {
         private static readonly Dictionary<Type, HashSet<Type>> TypeMap = new Dictionary<Type, HashSet<Type>>
         {
@@ -66,17 +66,17 @@ namespace Rql.NET
                 case null:
                     break; // TODO: 
                 case IEnumerable<object> objList:
-                {
-                    foreach (var v in objList)
                     {
-                        var objType2 = v.GetType();
-                        var expectedTypes2 = TypeMap[objType2];
-                        var isValid2 = expectedTypes2.Contains(propType);
-                        if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2}, found: {objType2}");
-                    }
+                        foreach (var v in objList)
+                        {
+                            var objType2 = v.GetType();
+                            var expectedTypes2 = TypeMap[objType2];
+                            var isValid2 = expectedTypes2.Contains(propType);
+                            if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2}, found: {objType2}");
+                        }
 
-                    return null;
-                }
+                        return null;
+                    }
             }
 
             var objType = value.GetType();
