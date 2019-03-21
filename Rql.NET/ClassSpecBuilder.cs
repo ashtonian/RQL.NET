@@ -26,10 +26,11 @@ namespace Rql.NET
     public class ClassSpecBuilder
     {
         private readonly Func<string, string> _columnNamer;
+        private readonly Func<string, Type, object, (object, IError)> _converter;
         private readonly Func<string, string> _fieldNamer;
         private readonly IOpMapper _opMapper;
         private readonly Func<string, Type, object, IError> _validator;
-        private readonly Func<string, Type, object, (object, IError)> _converter;
+
         public ClassSpecBuilder(
             Func<string, string> columnNamer = null,
             Func<string, string> fieldNamer = null,
@@ -44,21 +45,23 @@ namespace Rql.NET
             _validator = validator;
             _converter = converter;
         }
+
         public ClassSpec Build(Type t)
         {
             var spec = Defaults.CacheResolver(t);
             if (spec != null) return spec;
 
-            var _fields = new Dictionary<string, FieldSpec>() { };
+            var fields = new Dictionary<string, FieldSpec>();
 
             var properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             var classAttributes = t.GetCustomAttributes(true).ToList();
+            // TODO
             var classFilter = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
             var classSortable = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
 
             // TODO: is class use name resolver and concat fields to class 
             // v1 flat table nested class
-            // v2 assume table is joined, or do a subquery, or both? 
+            // v2 assume table is joined, or do a sub query, or both? 
             foreach (var p in properties)
             {
                 var attributes = p.GetCustomAttributes(true);
@@ -71,29 +74,37 @@ namespace Rql.NET
                 var opMapper = _opMapper ?? Defaults.DefaultOpMapper;
                 var ops = opMapper.GetSupportedOps(p.PropertyType);
                 var opsBlacklist = attributes?.OfType<Ops.Disallowed>()?.FirstOrDefault();
-                if (opsBlacklist != null) ops.ToList().RemoveAll(opsBlacklist._ops.Contains); // TODO: don't think this modifies the ops ref
+                if (opsBlacklist != null)
+                    ops.ToList().RemoveAll(opsBlacklist.Ops.Contains); // TODO: don't think this modifies the ops ref
                 var columnName = attributes?.OfType<ColumnName>()?.FirstOrDefault();
                 var fieldName = attributes?.OfType<FieldName>()?.FirstOrDefault();
 
-                var _field = new FieldSpec
+                var field = new FieldSpec
                 {
-                    IsSortable = (ignoreSort == null),
+                    IsSortable = ignoreSort == null,
                     Ops = ops,
                     PropType = p.PropertyType,
-                    ColumnName = columnName?._name ?? (_columnNamer != null ? _columnNamer(p.Name) : Defaults.DefaultColumnNamer(p.Name)),
-                    Name = fieldName?._name ?? (fieldName != null ? _fieldNamer(p.Name) : Defaults.DefaultFieldNamer(p.Name)),
-                    Converter = p.PropertyType == typeof(DateTime) ? Defaults.DefaultConverter : null,               // ?? attribute that looks for IConverter on field, then class
-                    Validator = null,               // ?? attribute that looks for IValidator on field, then class
+                    ColumnName = columnName?.Name ??
+                                 (_columnNamer != null ? _columnNamer(p.Name) : Defaults.DefaultColumnNamer(p.Name)),
+                    Name = fieldName?.Name ??
+                           (fieldName != null ? _fieldNamer(p.Name) : Defaults.DefaultFieldNamer(p.Name)),
+                    Converter = p.PropertyType == typeof(DateTime)
+                        ? Defaults.DefaultConverter
+                        : null, // ?? attribute that looks for IConverter on field, then class
+                    Validator = null // ?? attribute that looks for IValidator on field, then class
                 };
-                _fields.Add(_field.Name, _field);
+                fields.Add(field.Name, field);
             }
 
-            return new ClassSpec()
+            spec = new ClassSpec
             {
-                Fields = _fields,
+                Fields = fields,
                 Converter = _converter,
-                Validator = _validator ?? Defaults.DefaultValidator,
+                Validator = _validator ?? Defaults.DefaultValidator
             };
+
+            Defaults.TypeCache.Add(t, spec);
+            return spec;
         }
     }
 }

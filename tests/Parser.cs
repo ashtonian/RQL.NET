@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using Newtonsoft.Json;
 using Rql.NET;
 using Xunit;
@@ -25,11 +23,32 @@ namespace tests
         public string X_String { get; set; }
         public bool X_Bool { get; set; }
         public DateTime X_DateTime { get; set; }
-
     }
 
     public class ParserTests
     {
+        [Fact]
+        public void Complex()
+        {
+            var raw = @"{ 
+                            ""t_Long"": 3,
+                            ""$or"" : [ 
+                                {""t_Long"" : {""$gte"" : 1 }},
+                                {""t_Long"" : {""$lte"" : 5 }},
+                                {""t_Long"" : 20 }
+                            ],
+                            ""t_Bool"": true,
+                            ""$and"" : { ""t_String"": {""$like"":""%testing%"", ""$neq"" : ""test""} },
+                            ""t_Int"" : { ""$in"" : [1,2] }
+                        }
+                  ";
+            var (result, errs) = RqlParser.Parse<TestClass>(raw);
+            Assert.True(errs == null);
+            Assert.Equal(
+                "T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int",
+                result.Filter);
+            Console.WriteLine(result.Filter);
+        }
 
         [Fact]
         public void Play()
@@ -52,7 +71,6 @@ namespace tests
         }
 
 
-
         [Fact]
         public void SimpleAnd()
         {
@@ -68,33 +86,9 @@ namespace tests
             ";
             var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);
-            Assert.Equal("T_Long = @t_Long AND T_Int = @t_Int AND T_Float = @t_Float AND T_String = @t_String AND T_Bool = @t_Bool AND T_DateTime = @t_DateTime AND T_DateTime2 = @t_DateTime2", result.Filter);
+            Assert.Equal(
+                "T_Long = @t_Long AND T_Int = @t_Int AND T_Float = @t_Float AND T_String = @t_String AND T_Bool = @t_Bool AND T_DateTime = @t_DateTime AND T_DateTime2 = @t_DateTime2",
+                result.Filter);
         }
-
-        [Fact]
-        public void Complex()
-        {
-            var raw = @"{ 
-                            ""t_Long"": 3,
-                            ""$or"" : [ 
-                                {""t_Long"" : {""$gte"" : 1 }},
-                                {""t_Long"" : {""$lte"" : 5 }},
-                                {""t_Long"" : 20 }
-                            ],
-                            ""t_Bool"": true,
-                            ""$and"" : { ""t_String"": {""$like"":""%testing%"", ""$neq"" : ""test""} },
-                            ""t_Int"" : { ""$in"" : [1,2] }
-                        }
-                  ";
-            var (result, errs) = RqlParser.Parse<TestClass>(raw);
-            Assert.True(errs == null);
-            Assert.Equal("T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int", result.Filter);
-            Console.WriteLine(result.Filter);
-        }
-
     }
 }
-
-
-
-

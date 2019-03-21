@@ -9,51 +9,75 @@ using System;
 namespace Rql.NET
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public class Filterable : System.Attribute
+    public class Filterable : Attribute
     {
-        internal string[] _props;
-        public Filterable(params string[] props) { _props = props; }
+        internal readonly string[] Props;
+
+        public Filterable(params string[] props)
+        {
+            Props = props;
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    public class Sortable : System.Attribute
+    public class Sortable : Attribute
     {
-        internal string[] _props;
-        public Sortable(params string[] props) { _props = props; }
+        internal readonly string[] Props;
+
+        public Sortable(params string[] props)
+        {
+            Props = props;
+        }
     }
 
 
     [AttributeUsage(AttributeTargets.Property)]
-    public class Ignore : System.Attribute
+    public class Ignore : Attribute
     {
         [AttributeUsage(AttributeTargets.Property)]
-        public class Sort : System.Attribute { }
+        public class Sort : Attribute
+        {
+        }
 
         [AttributeUsage(AttributeTargets.Property)]
-        public class Filter : System.Attribute { }
+        public class Filter : Attribute
+        {
+        }
     }
+
     public class Ops
     {
-
         [AttributeUsage(AttributeTargets.Property)]
-        public class Disallowed : System.Attribute
+        public class Disallowed : Attribute
         {
-            internal string[] _ops;
-            public Disallowed(params string[] ops) { _ops = ops; }
+            internal readonly string[] Ops;
+
+            public Disallowed(params string[] ops)
+            {
+                Ops = ops;
+            }
         }
     }
 
     [AttributeUsage(AttributeTargets.Property)]
-    public class ColumnName : System.Attribute
+    public class ColumnName : Attribute
     {
-        internal string _name;
-        public ColumnName(string name) { _name = name; }
+        internal readonly string Name;
+
+        public ColumnName(string name)
+        {
+            Name = name;
+        }
     }
 
     [AttributeUsage(AttributeTargets.Property)]
-    public class FieldName : System.Attribute
+    public class FieldName : Attribute
     {
-        internal string _name;
-        public FieldName(string name) { _name = name; }
+        internal readonly string Name;
+
+        public FieldName(string name)
+        {
+            Name = name;
+        }
     }
 }

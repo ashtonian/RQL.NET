@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Rql.NET
@@ -30,8 +29,8 @@ namespace Rql.NET
     // produces @City and @City2
     public class NamedTokenizer : IParameterTokenizer
     {
-        private readonly string _tokenPrefix;
         private readonly Dictionary<string, int> _propCount = new Dictionary<string, int>();
+        private readonly string _tokenPrefix;
 
         public NamedTokenizer(string tokenPrefix = "@")
         {
@@ -43,8 +42,9 @@ namespace Rql.NET
             _propCount.TryGetValue(fieldName, out var currentCount);
             _propCount[fieldName] = currentCount + 1;
 
-            if (_propCount[fieldName] > 1) return $"{_tokenPrefix}{fieldName}{_propCount[fieldName]}";
-            return $"{_tokenPrefix}{fieldName}";
+            return _propCount[fieldName] > 1
+                ? $"{_tokenPrefix}{fieldName}{_propCount[fieldName]}"
+                : $"{_tokenPrefix}{fieldName}";
         }
     }
 }
