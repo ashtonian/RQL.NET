@@ -6,7 +6,7 @@ namespace Rql.NET
 {
     public class DefaultTypeValidator
     {
-        private static Dictionary<Type, HashSet<Type>> _typeMap = new Dictionary<Type, HashSet<Type>> {
+        private static readonly Dictionary<Type, HashSet<Type>> TypeMap = new Dictionary<Type, HashSet<Type>> {
         {
             typeof(bool),
             new HashSet<Type>
@@ -21,11 +21,11 @@ namespace Rql.NET
                 typeof(sbyte),
                 typeof(byte),
                 typeof(Int16),
-                typeof(Int32) ,
-                typeof(Int64) ,
-                typeof(UInt16) ,
-                typeof(UInt64) ,
-                typeof(Single),
+                typeof(int) ,
+                typeof(long) ,
+                typeof(ushort) ,
+                typeof(ulong) ,
+                typeof(float),
                 typeof(Double),
                 typeof(Decimal),
             }
@@ -34,9 +34,9 @@ namespace Rql.NET
             typeof(Double),
             new HashSet<Type>
             {
-                typeof(Single),
-                typeof(Double),
-                typeof(Decimal),
+                typeof(float),
+                typeof(double),
+                typeof(decimal),
             }
         },
         {
@@ -62,26 +62,27 @@ namespace Rql.NET
 
         public IError Validate(string propName, Type propType, object value)
         {
-            if (value == null) { } // TODO: 
-            var objList = value as IEnumerable<Object>;
-            if (objList != null)
+            switch (value)
             {
-                foreach (var v in objList)
+                case null:
+                    break; // TODO: 
+                case IEnumerable<object> objList:
                 {
-                    var objType2 = v.GetType();
-                    var expectedTypes2 = _typeMap[objType2];
-                    var isValid2 = expectedTypes2.Contains(propType);
-                    if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2.ToString()}, found: {objType2}");
+                    foreach (var v in objList)
+                    {
+                        var objType2 = v.GetType();
+                        var expectedTypes2 = TypeMap[objType2];
+                        var isValid2 = expectedTypes2.Contains(propType);
+                        if (!isValid2) return new Error($"Invalid type Expected:{expectedTypes2}, found: {objType2}");
+                    }
+                    return null;
                 }
-                return null;
             }
 
             var objType = value.GetType();
-            var expectedTypes = _typeMap[objType];
+            var expectedTypes = TypeMap[objType];
             var isValid = expectedTypes.Contains(propType);
-            if (!isValid) return new Error($"Invalid type Expected:{expectedTypes.ToString()}, found: {objType}");
-
-            return null;
+            return !isValid ? new Error($"Invalid type Expected:{expectedTypes}, found: {objType}") : null;
         }
     }
 }

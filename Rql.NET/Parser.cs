@@ -30,7 +30,7 @@ namespace Rql.NET
         public int GetPage()
         {
             if (Offset <= 0 || Offset < Limit) return 1;
-            return (int)Math.Floor((double)Offset / (double)Limit) + 1;
+            return (int)Math.Floor(Offset / (double)Limit) + 1;
         }
     }
 
@@ -43,7 +43,7 @@ namespace Rql.NET
         public int GetPage()
         {
             if (Offset <= 0 || Offset < Limit) return 1;
-            return (int)Math.Floor((double)Offset / (double)Limit) + 1;
+            return (int)Math.Floor(Offset / (double)Limit) + 1;
         }
     }
 
@@ -127,12 +127,12 @@ namespace Rql.NET
 
             var json = jsonObject as JContainer;
 
-            var offset = json["Offset"]?.Value<Int32>() ?? json["offset"]?.Value<Int32>() ?? Defaults.Offset;
-            var limit = json["Limit"]?.Value<Int32>() ?? json["limit"]?.Value<Int32>() ?? Defaults.Limit;
+            var offset = json["Offset"]?.Value<int>() ?? json["offset"]?.Value<int>() ?? Defaults.Offset;
+            var limit = json["Limit"]?.Value<int>() ?? json["limit"]?.Value<int>() ?? Defaults.Limit;
             var sort = json["Sort"] as JToken ?? json["sort"] as JToken;
             var (sortExp, errs) = parseSort(sort, _opResolver, _classSpec);
 
-            var filterRaw = json["Filter"] as JToken ?? json["filter"] as JToken;
+            var filterRaw = json["Filter"] ?? json["filter"];
             var (filter, parameters, errors) = ParseTerms(this, filterRaw as JContainer, RqlOp.AND);
             if (errors != null) errs.AddRange(errors);
             return (
@@ -142,7 +142,7 @@ namespace Rql.NET
                     Parameters = parameters,
                     Offset = offset,
                     Limit = limit,
-                    Sort = string.Join(Defaults.SortSeperator, sortExp).Trim(),
+                    Sort = string.Join(Defaults.SortSeparator, sortExp).Trim(),
                 },
                 errs.Any() ? errs : null
             );
@@ -163,8 +163,8 @@ namespace Rql.NET
             foreach (var s in sortArry)
             {
                 var sortStr = s.Value<string>();
-                var sortDir = "+";
-                if (sortStr.StartsWith("+") || sortStr.StartsWith("-"))
+                var sortDir = RqlOp.ASC;
+                if (sortStr.StartsWith(RqlOp.ASC) || sortStr.StartsWith(RqlOp.DESC))
                 {
                     sortDir = sortStr[0].ToString();
                     sortStr = sortStr.Substring(1);
@@ -232,17 +232,16 @@ namespace Rql.NET
                     || leftSide == RqlOp.NOR
                 )
                 {
-                    if (container.Count > 0) state._query.Append($"( ");
-                    // state._query.Append($"{leftSide} (");
+                    if (container.Count > 0) state._query.Append("( ");
                     ParseTerms(parser, nextTerm, leftSide, state);
-                    if (container.Count > 0) state._query.Append($") ");
+                    if (container.Count > 0) state._query.Append(") ");
                 }
                 // Right side is primitive and and field is left side or parent 
                 else if (RqlOp.IsOp(leftSide) || field != null)
                 {
                     var parentField = parser._classSpec.Fields.ContainsKey(parentToken) ? parser._classSpec.Fields[parentToken] : null;
                     var op = RqlOp.IsOp(leftSide) ? leftSide : RqlOp.EQ;
-                    resolveNode(parser, field ?? parentField, op, token, state);
+                    ResolveNode(parser, field ?? parentField, op, token, state);
                 }
                 else
                 {
@@ -257,7 +256,7 @@ namespace Rql.NET
             );
         }
 
-        private static void resolveNode(
+        private static void ResolveNode(
             RqlParser parser,
             FieldSpec fieldSpec,
             string rqlOp,
@@ -270,39 +269,39 @@ namespace Rql.NET
 
             if (!fieldSpec.Ops.Contains(rqlOp)) { state._errors.Add(new Error($"{fieldSpec.Name} does not support {rqlOp}.")); return; }
 
-            var preVal = prepPrim(val, rqlOp == RqlOp.IN || rqlOp == RqlOp.NIN);
-            var (key, processedVal, err) = getParameter(fieldSpec, preVal, state._parameterTokenizer, parser._classSpec.Converter, parser._classSpec.Validator);
+            var preVal = PrepPrim(val, rqlOp == RqlOp.IN || rqlOp == RqlOp.NIN);
+            var (key, processedVal, err) = GetParameter(fieldSpec, preVal, state._parameterTokenizer, parser._classSpec.Converter, parser._classSpec.Validator);
             if (err != null) { state._errors.Add(err); return; }
 
             state._filterParameters.Add(key, processedVal);
             state._query.Append($"{fieldSpec.ColumnName} {sqlOp} {key} ");
         }
 
-        private static object prepPrim(JProperty jToken, bool expectArray = false)
+        private static object PrepPrim(JProperty jToken, bool expectArray = false)
         {
             if (expectArray)
             {
                 var jArray = jToken.Value as JArray;
-                var res = jArray.Select(x => x as JValue).Select(x => x.Value).ToList();
+                var res = jArray?.Select(x => x as JValue).Select(x => x?.Value).ToList();
                 return res;
             }
 
             var jProp = jToken.Value as JProperty;
             var jValue = (jProp?.Value ?? jToken?.Value) as JValue;
 
-            return jValue.Value;
+            return jValue?.Value;
         }
 
-        private static (string, object, IError) getParameter(
+        private static (string, object, IError) GetParameter(
             FieldSpec field,
             object val,
-            IParameterTokenizer _tokenizer,
-            Func<string, Type, object, (object, IError)> _defaultConverter = null,
-            Func<string, Type, object, IError> _defaultValidator = null
+            IParameterTokenizer tokenizer,
+            Func<string, Type, object, (object, IError)> defaultConverter = null,
+            Func<string, Type, object, IError> defaultValidator = null
         )
         {
             if (val == null) return (null, null, new Error("could not parse right side as valid primitive"));
-            var converter = field.Converter ?? _defaultConverter;
+            var converter = field.Converter ?? defaultConverter;
 
             if (converter != null)
             {
@@ -311,14 +310,14 @@ namespace Rql.NET
                 val = v;
             }
 
-            var validator = field.Validator ?? _defaultValidator;
+            var validator = field.Validator ?? defaultValidator;
             if (validator != null)
             {
                 var err = validator(field.Name, field.PropType, val);
                 if (err != null) return (null, null, err);
             }
 
-            var parameterName = _tokenizer.GetToken(field.Name, field.PropType);
+            var parameterName = tokenizer.GetToken(field.Name, field.PropType);
 
             return (parameterName, val, null);
         }

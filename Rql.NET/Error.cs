@@ -5,7 +5,7 @@ namespace Rql.NET
 
     public class Error : IError
     {
-        private string _msg;
+        private readonly string _msg;
         public Error(string msg)
         {
             _msg = msg;

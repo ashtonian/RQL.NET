@@ -13,7 +13,7 @@ namespace Rql.NET
     // produces @1, @2
     public class IndexTokenizer : IParameterTokenizer
     {
-        private string _tokenPrefix;
+        private readonly string _tokenPrefix;
         private int _tokenCount;
 
         public IndexTokenizer(string tokenPrefix = "@")
@@ -30,8 +30,8 @@ namespace Rql.NET
     // produces @City and @City2
     public class NamedTokenizer : IParameterTokenizer
     {
-        private string _tokenPrefix;
-        private Dictionary<string, int> _propCount = new Dictionary<string, int>();
+        private readonly string _tokenPrefix;
+        private readonly Dictionary<string, int> _propCount = new Dictionary<string, int>();
 
         public NamedTokenizer(string tokenPrefix = "@")
         {

@@ -6,7 +6,7 @@ namespace Rql.NET
     public interface IOpMapper
     {
         string GetDbOp(string rqlOp);
-        HashSet<String> GetSupportedOps(Type type);
+        HashSet<string> GetSupportedOps(Type type);
         // TODO: sort ops only function
     }
 
@@ -36,17 +36,14 @@ namespace Rql.NET
             var numerics = new HashSet<Type>() {
             typeof(sbyte),
             typeof(byte),
-            typeof(Int16),
-            typeof(Int32),
-            typeof(Int64),
-            typeof(UInt16),
-            typeof(UInt64),
-            typeof(Single),
-            typeof(Double),
-            typeof(Decimal),
-            typeof(Single),
-            typeof(Double),
-            typeof(Decimal),
+            typeof(short),
+            typeof(int),
+            typeof(long),
+            typeof(ushort),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
         };
             var strings = new HashSet<Type>() {
             typeof(string),
@@ -123,7 +120,7 @@ namespace Rql.NET
         public const string IN = "IN";
         public const string ASC = "ASC";
         public const string DESC = "DESC";
-        private static readonly HashSet<string> _SqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> SqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         {EQ},
         {NEQ},
@@ -142,7 +139,7 @@ namespace Rql.NET
         {
             if (val == null || val.Trim().Length < 0) return false;
 
-            return _SqlOps.Contains(val);
+            return SqlOps.Contains(val);
         }
     }
 
@@ -161,9 +158,10 @@ namespace Rql.NET
         public static readonly string AND = $"{Defaults.Prefix}and";
         public static readonly string IN = $"{Defaults.Prefix}in";
         public static readonly string NIN = $"{Defaults.Prefix}nin";
-        public static readonly string ASC = "+";
-        public static readonly string DESC = "-";
-        private static readonly HashSet<string> _rqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        public const string ASC = "+";
+        public const string DESC = "-";
+
+        private static readonly HashSet<string> RqlOps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         {EQ},
         {NEQ},
@@ -182,8 +180,7 @@ namespace Rql.NET
 
         public static bool IsOp(string val)
         {
-            if (val == null) return false;
-            return _rqlOps.Contains(val);
+            return val != null && RqlOps.Contains(val);
         }
     }
 }
