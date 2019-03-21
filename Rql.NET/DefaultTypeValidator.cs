@@ -62,7 +62,6 @@ namespace Rql.NET
 
         public IError Validate(string propName, Type propType, object value)
         {
-            // TODO: null, datetime string?, unix time?
             if (value == null) { } // TODO: 
             var objList = value as IEnumerable<Object>;
             if (objList != null)

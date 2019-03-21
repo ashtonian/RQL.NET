@@ -6,6 +6,10 @@ namespace Rql.NET
 {
     public static class Defaults
     {
+        public static string SortSeperator = ",";
+        public static string Prefix = "$";
+        public static int Offset = 0;
+        public static int Limit = 10000;
         public static Func<IParameterTokenizer> DefaultTokenizerFactory = new Func<IParameterTokenizer>(() => { return new NamedTokenizer(); });
         public static Func<string, Type, object, IError> DefaultValidator = new DefaultTypeValidator().Validate;
         public static Func<string, string> DefaultColumnNamer = new Func<string, string>(x => x);

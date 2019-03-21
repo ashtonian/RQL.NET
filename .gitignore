@@ -345,3 +345,6 @@ MigrationBackup/
 
 # vscode local 
 .vscode/
+
+# jetbrains
+.idea/

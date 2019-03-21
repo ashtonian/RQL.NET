@@ -57,6 +57,8 @@ namespace Rql.NET
             var classSortable = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
 
             // TODO: is class use name resolver and concat fields to class 
+            // v1 flat table nested class
+            // v2 assume table is joined, or do a subquery, or both? 
             foreach (var p in properties)
             {
                 var attributes = p.GetCustomAttributes(true);

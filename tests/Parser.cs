@@ -34,8 +34,24 @@ namespace tests
         [Fact]
         public void Play()
         {
-            IParseRql<TestClass> test = new Parser<TestClass>();
+            IRqlParser<TestClass> test = new Parser<TestClass>();
+            var raw = @"{ 
+                            ""t_Long"": 3,
+                            ""$or"" : [ 
+                                {""t_Long"" : {""$gte"" : 1 }},
+                                {""t_Long"" : {""$lte"" : 5 }},
+                                {""t_Long"" : 20 }
+                            ],
+                            ""t_Bool"": true,
+                            ""$and"" : { ""t_String"": {""$like"":""%testing%"", ""$neq"" : ""test""} },
+                            ""t_Int"" : { ""$in"" : [1,2] }
+                        }
+                  ";
+            var values = JsonConvert.DeserializeObject<Dictionary<string, object>>(raw);
+            Console.WriteLine(values);
         }
+
+
 
         [Fact]
         public void SimpleAnd()
@@ -50,9 +66,9 @@ namespace tests
                             ""t_DateTime2"" : 1553063286
                         }
             ";
-            var (result, errs) = Parser.Parse<TestClass>(raw);
+            var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);
-            Assert.Equal("T_Long = @t_Long AND T_Int = @t_Int AND T_Float = @t_Float AND T_String = @t_String AND T_Bool = @t_Bool AND T_DateTime = @t_DateTime AND T_DateTime2 = @t_DateTime2", result.FilterExpression);
+            Assert.Equal("T_Long = @t_Long AND T_Int = @t_Int AND T_Float = @t_Float AND T_String = @t_String AND T_Bool = @t_Bool AND T_DateTime = @t_DateTime AND T_DateTime2 = @t_DateTime2", result.Filter);
         }
 
         [Fact]
@@ -70,10 +86,10 @@ namespace tests
                             ""t_Int"" : { ""$in"" : [1,2] }
                         }
                   ";
-            var (result, errs) = Parser.Parse<TestClass>(raw);
+            var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);
-            Assert.Equal("T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int", result.FilterExpression);
-            Console.WriteLine(result.FilterExpression);
+            Assert.Equal("T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int", result.Filter);
+            Console.WriteLine(result.Filter);
         }
 
     }

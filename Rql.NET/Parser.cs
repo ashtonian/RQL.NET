@@ -24,20 +24,27 @@ namespace Rql.NET
     {
         public int Limit { get; set; }
         public int Offset { get; set; }
-        public List<string> SortExpression { get; set; }
-        public string FilterExpression { get; set; }
-        public Dictionary<string, object> FilterParameters { get; set; } // TODO: document use of SqlParameter<>/escaping required
-        // TODO: GetPage() helper 
-        // TODO: convert SortExpression to string
+        public string Sort { get; set; }
+        public string Filter { get; set; }
+        public Dictionary<string, object> Parameters { get; set; }
+        public int GetPage()
+        {
+            if (Offset <= 0 || Offset < Limit) return 1;
+            return (int)Math.Floor((double)Offset / (double)Limit) + 1;
+        }
     }
 
-    //TODO: typed input 
     public class RqlExpression
     {
         public int Limit { get; set; }
         public int Offset { get; set; }
-        public string Sort { get; set; }
-        public Dictionary<string, object> Query { get; set; }
+        public List<string> Sort { get; set; }
+        public Dictionary<string, object> Filter { get; set; }
+        public int GetPage()
+        {
+            if (Offset <= 0 || Offset < Limit) return 1;
+            return (int)Math.Floor((double)Offset / (double)Limit) + 1;
+        }
     }
 
     internal class ParseState
@@ -52,7 +59,7 @@ namespace Rql.NET
         public readonly IParameterTokenizer _parameterTokenizer;
     }
 
-    public class Parser<T> : Parser, IParseRql<T>
+    public class Parser<T> : RqlParser, IRqlParser<T>
     {
         public Parser(
             Func<string, string> opResolver = null,
@@ -67,21 +74,23 @@ namespace Rql.NET
         }
     }
 
-    public interface IParseRql<T> : IParseRql
+    public interface IRqlParser<T> : IRqlParser
     {
 
     }
-    public interface IParseRql
+
+    public interface IRqlParser
     {
         (DbExpression, IEnumerable<IError>) Parse(string toParse);
     }
-    public class Parser : IParseRql
+
+    public class RqlParser : IRqlParser
     {
         private readonly Func<IParameterTokenizer> _tokenizerFactory;
         private readonly ClassSpec _classSpec;
         private readonly Func<string, string> _opResolver;
 
-        public Parser(ClassSpec classSpec, Func<string, string> opResolver = null, Func<IParameterTokenizer> tokenizerFactory = null)
+        public RqlParser(ClassSpec classSpec, Func<string, string> opResolver = null, Func<IParameterTokenizer> tokenizerFactory = null)
         {
             if (tokenizerFactory == null)
             {
@@ -103,6 +112,13 @@ namespace Rql.NET
             return parser.Parse(toParse);
         }
 
+        public (DbExpression, IEnumerable<IError>) Parse(RqlExpression rqlExpression)
+        {
+            var raw = JsonConvert.SerializeObject(rqlExpression);
+            // TODO: convert json to proper Dictionary<string,object> and remove hack
+            return Parse(raw);
+        }
+
         public (DbExpression, IEnumerable<IError>) Parse(string toParse)
         {
             // try
@@ -111,50 +127,22 @@ namespace Rql.NET
 
             var json = jsonObject as JContainer;
 
-            // TODO: move to config and other func 
-            var offset = json["Offset"]?.Value<Int32>() ?? json["offset"]?.Value<Int32>() ?? 0;
-            var limit = json["Limit"]?.Value<Int32>() ?? json["limit"]?.Value<Int32>() ?? 1000;
+            var offset = json["Offset"]?.Value<Int32>() ?? json["offset"]?.Value<Int32>() ?? Defaults.Offset;
+            var limit = json["Limit"]?.Value<Int32>() ?? json["limit"]?.Value<Int32>() ?? Defaults.Limit;
             var sort = json["Sort"] as JToken ?? json["sort"] as JToken;
-            var sortArry = sort?.ToList();
+            var (sortExp, errs) = parseSort(sort, _opResolver, _classSpec);
 
-            var sortOut = new List<string>() { };
-            var errs = new List<IError>() { };
-            if (sortArry != null)
-            {
-                foreach (var s in sortArry)
-                {
-                    var sortStr = s.Value<string>();
-                    var sortDir = "+";
-                    if (sortStr.StartsWith("+") || sortStr.StartsWith("-"))
-                    {
-                        sortDir = sortStr[0].ToString();
-                        sortStr = sortStr.Substring(1);
-                    }
-                    var sqlSort = this._opResolver(sortDir);
-                    var val = s.Value<string>();
-                    var fieldSpec = _classSpec.Fields.ContainsKey(val) ? _classSpec.Fields[val] : null;
-                    if (fieldSpec == null || !fieldSpec.IsSortable)
-                    {
-                        errs.Add(new Error("not allowed to sort []"));
-                        continue;
-                    }
-                    sortOut.Add($" {fieldSpec.ColumnName} {sqlSort}");
-                }
-            }
-
-
-            // TODO: pull out root query object 
-
-            var (query, queryParams, errors) = ParseTerms(this, jsonObject as JContainer, RqlOp.AND); // TODO: or if array
+            var filterRaw = json["Filter"] as JToken ?? json["filter"] as JToken;
+            var (filter, parameters, errors) = ParseTerms(this, filterRaw as JContainer, RqlOp.AND);
             if (errors != null) errs.AddRange(errors);
             return (
                 new DbExpression
                 {
-                    FilterExpression = query,
-                    FilterParameters = queryParams,
+                    Filter = filter,
+                    Parameters = parameters,
                     Offset = offset,
                     Limit = limit,
-                    SortExpression = sortOut,
+                    Sort = string.Join(Defaults.SortSeperator, sortExp).Trim(),
                 },
                 errs.Any() ? errs : null
             );
@@ -165,8 +153,37 @@ namespace Rql.NET
             // }
         }
 
+        private static (List<string>, List<IError>) parseSort(JToken sort, Func<string, string> _opResolver, ClassSpec _classSpec)
+        {
+            var sortArry = sort?.ToList();
+            var sortOut = new List<string>() { };
+            var errs = new List<IError>() { };
+            if (sortArry == null) return (sortOut, errs);
+
+            foreach (var s in sortArry)
+            {
+                var sortStr = s.Value<string>();
+                var sortDir = "+";
+                if (sortStr.StartsWith("+") || sortStr.StartsWith("-"))
+                {
+                    sortDir = sortStr[0].ToString();
+                    sortStr = sortStr.Substring(1);
+                }
+                var sqlSort = _opResolver(sortDir);
+                var val = s.Value<string>();
+                var fieldSpec = _classSpec.Fields.ContainsKey(val) ? _classSpec.Fields[val] : null;
+                if (fieldSpec == null || !fieldSpec.IsSortable)
+                {
+                    errs.Add(new Error("not allowed to sort []"));
+                    continue;
+                }
+                sortOut.Add($"{fieldSpec.ColumnName} {sqlSort} ");
+            }
+            return (sortOut, errs);
+        }
+
         private static (string, Dictionary<string, object> FilterParameters, IEnumerable<IError>) ParseTerms(
-            Parser parser,
+            RqlParser parser,
             JContainer container,
             string parentToken,
             ParseState state = null
@@ -241,7 +258,7 @@ namespace Rql.NET
         }
 
         private static void resolveNode(
-            Parser parser,
+            RqlParser parser,
             FieldSpec fieldSpec,
             string rqlOp,
             JProperty val,
