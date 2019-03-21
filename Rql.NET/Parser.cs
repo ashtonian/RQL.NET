@@ -20,13 +20,24 @@ using Newtonsoft.Json.Linq;
 
 namespace Rql.NET
 {
-    public class ParseResult
+    public class DbExpression
     {
         public int Limit { get; set; }
         public int Offset { get; set; }
         public List<string> SortExpression { get; set; }
         public string FilterExpression { get; set; }
         public Dictionary<string, object> FilterParameters { get; set; } // TODO: document use of SqlParameter<>/escaping required
+        // TODO: GetPage() helper 
+        // TODO: convert SortExpression to string
+    }
+
+    //TODO: typed input 
+    public class RqlExpression
+    {
+        public int Limit { get; set; }
+        public int Offset { get; set; }
+        public string Sort { get; set; }
+        public Dictionary<string, object> Query { get; set; }
     }
 
     internal class ParseState
@@ -62,7 +73,7 @@ namespace Rql.NET
     }
     public interface IParseRql
     {
-        (ParseResult, IEnumerable<IError>) Parse(string toParse);
+        (DbExpression, IEnumerable<IError>) Parse(string toParse);
     }
     public class Parser : IParseRql
     {
@@ -86,13 +97,13 @@ namespace Rql.NET
         }
 
 
-        public static (ParseResult, IEnumerable<IError>) Parse<T>(string toParse)
+        public static (DbExpression, IEnumerable<IError>) Parse<T>(string toParse)
         {
             var parser = new Parser<T>();
             return parser.Parse(toParse);
         }
 
-        public (ParseResult, IEnumerable<IError>) Parse(string toParse)
+        public (DbExpression, IEnumerable<IError>) Parse(string toParse)
         {
             // try
             // {
@@ -132,10 +143,12 @@ namespace Rql.NET
             }
 
 
+            // TODO: pull out root query object 
+
             var (query, queryParams, errors) = ParseTerms(this, jsonObject as JContainer, RqlOp.AND); // TODO: or if array
             if (errors != null) errs.AddRange(errors);
             return (
-                new ParseResult
+                new DbExpression
                 {
                     FilterExpression = query,
                     FilterParameters = queryParams,
