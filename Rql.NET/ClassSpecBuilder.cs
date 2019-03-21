@@ -86,11 +86,14 @@ namespace Rql.NET
                     PropType = p.PropertyType,
                     ColumnName = columnName?.Name ??
                                  (_columnNamer != null ? _columnNamer(p.Name) : Defaults.DefaultColumnNamer(p.Name)),
+
                     Name = fieldName?.Name ??
                            (fieldName != null ? _fieldNamer(p.Name) : Defaults.DefaultFieldNamer(p.Name)),
+
                     Converter = p.PropertyType == typeof(DateTime)
                         ? Defaults.DefaultConverter
                         : null, // ?? attribute that looks for IConverter on field, then class
+
                     Validator = null // ?? attribute that looks for IValidator on field, then class
                 };
                 fields.Add(field.Name, field);

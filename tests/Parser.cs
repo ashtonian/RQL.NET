@@ -27,10 +27,18 @@ namespace tests
 
     public class ParserTests
     {
+        /*
+            Test Plan: 
+                Attributes Ignore, Names
+                Sort
+                Limit, Offset GetPage
+
+        */
         [Fact]
         public void Complex()
         {
             var raw = @"{ 
+                ""filter"": { 
                             ""t_Long"": 3,
                             ""$or"" : [ 
                                 {""t_Long"" : {""$gte"" : 1 }},
@@ -41,6 +49,7 @@ namespace tests
                             ""$and"" : { ""t_String"": {""$like"":""%testing%"", ""$neq"" : ""test""} },
                             ""t_Int"" : { ""$in"" : [1,2] }
                         }
+                }
                   ";
             var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);
@@ -54,7 +63,8 @@ namespace tests
         public void Play()
         {
             IRqlParser<TestClass> test = new Parser<TestClass>();
-            var raw = @"{ 
+            var raw = @"{
+                    ""filter"": { 
                             ""t_Long"": 3,
                             ""$or"" : [ 
                                 {""t_Long"" : {""$gte"" : 1 }},
@@ -65,6 +75,7 @@ namespace tests
                             ""$and"" : { ""t_String"": {""$like"":""%testing%"", ""$neq"" : ""test""} },
                             ""t_Int"" : { ""$in"" : [1,2] }
                         }
+                    }
                   ";
             var values = JsonConvert.DeserializeObject<Dictionary<string, object>>(raw);
             Console.WriteLine(values);
