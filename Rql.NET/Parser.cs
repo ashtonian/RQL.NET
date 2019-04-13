@@ -26,12 +26,6 @@ namespace Rql.NET
         public string Sort { get; set; }
         public string Filter { get; set; }
         public Dictionary<string, object> Parameters { get; set; }
-
-        public int GetPage()
-        {
-            if (Offset <= 0 || Offset < Limit) return 1;
-            return (int)Math.Floor(Offset / (double)Limit) + 1;
-        }
     }
 
     public class RqlExpression
@@ -40,12 +34,6 @@ namespace Rql.NET
         public int Offset { get; set; }
         public List<string> Sort { get; set; }
         public Dictionary<string, object> Filter { get; set; }
-
-        public int GetPage()
-        {
-            if (Offset <= 0 || Offset < Limit) return 1;
-            return (int)Math.Floor(Offset / (double)Limit) + 1;
-        }
     }
 
     internal class ParseState
