@@ -5,6 +5,8 @@ namespace Rql.NET
 {
     public static class Defaults
     {
+        // TODO: pass through parsed request sort list<string> and eventually structured rql query
+        // TODO: add default sort fields id, key if detected and not ignored
         public static string SortSeparator = ",";
         public static string Prefix = "$";
         public static int Offset = 0;

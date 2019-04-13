@@ -17,7 +17,6 @@ using Newtonsoft.Json.Linq;
     validate and right side is object and, or/nor is array
  */
 
-
 namespace Rql.NET
 {
     public class DbExpression
@@ -109,7 +108,7 @@ namespace Rql.NET
             var jsonObject = JsonConvert.DeserializeObject(toParse);
 
             var json = jsonObject as JContainer;
-
+            // TODO: handle errors better
             var offset = json["Offset"]?.Value<int>() ?? json["offset"]?.Value<int>() ?? Defaults.Offset;
             var limit = json["Limit"]?.Value<int>() ?? json["limit"]?.Value<int>() ?? Defaults.Limit;
             var sort = json["Sort"] ?? json["sort"];
@@ -118,8 +117,9 @@ namespace Rql.NET
 
             var filterRaw = json["Filter"] ?? json["filter"];
             var filterContainer = filterRaw as JContainer;
-            var (filter, parameters, errors) = filterContainer == null ?
-                ("", new Dictionary<string, object>(), null) : ParseTerms(this, filterContainer, RqlOp.AND);
+
+            if (filterContainer == null) return (null, new[] { new Error("missing required field 'filter'") });
+            var (filter, parameters, errors) = ParseTerms(this, filterContainer, RqlOp.AND);
 
             if (errors != null) errs.AddRange(errors);
             return (
@@ -147,6 +147,11 @@ namespace Rql.NET
             return parser.Parse(toParse);
         }
 
+        public static (DbExpression, IEnumerable<IError>) Parse<T>(RqlExpression rqlExpression)
+        {
+            var parser = new Parser<T>();
+            return parser.Parse(rqlExpression);
+        }
         public (DbExpression, IEnumerable<IError>) Parse(RqlExpression rqlExpression)
         {
             var raw = JsonConvert.SerializeObject(rqlExpression);
@@ -256,7 +261,7 @@ namespace Rql.NET
                 }
                 else
                 {
-                    state.Errors.Add(new Error($"invalid field or op {leftSide}, parent:{parentToken}"));
+                    state.Errors.Add(new Error($"invalid field or op: '{leftSide}', parent: '{parentToken}'"));
                 }
             }
 
@@ -278,13 +283,13 @@ namespace Rql.NET
             var sqlOp = parser._opResolver(rqlOp);
             if (sqlOp == null)
             {
-                state.Errors.Add(new Error($"{rqlOp} is not supported."));
+                state.Errors.Add(new Error($"'{rqlOp}' is not supported by data provider"));
                 return;
             }
 
             if (!fieldSpec.Ops.Contains(rqlOp))
             {
-                state.Errors.Add(new Error($"{fieldSpec.Name} does not support {rqlOp}."));
+                state.Errors.Add(new Error($"'{fieldSpec.Name}' does not support op: '{rqlOp}'"));
                 return;
             }
 
@@ -324,7 +329,7 @@ namespace Rql.NET
             Func<string, Type, object, IError> defaultValidator = null
         )
         {
-            if (val == null) return (null, null, new Error("could not parse right side as valid primitive"));
+            if (val == null) return (null, null, new Error("could not parse right side as a valid primitive"));
             var converter = field.Converter ?? defaultConverter;
 
             if (converter != null)

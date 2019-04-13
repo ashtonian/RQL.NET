@@ -22,6 +22,7 @@ namespace tests
         public int X_Int { get; set; }
         public string X_String { get; set; }
         public bool X_Bool { get; set; }
+
         public DateTime X_DateTime { get; set; }
     }
 
