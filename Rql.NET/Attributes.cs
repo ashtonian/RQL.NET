@@ -5,7 +5,7 @@ using System;
 /*  Attributes
     CustomTypeConverter
     CustomValidator
-    DefaultSort 
+    DefaultSort
 */
 namespace Rql.NET
 {
