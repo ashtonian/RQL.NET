@@ -6,40 +6,51 @@ using System;
     CustomTypeConverter
     CustomValidator
     DefaultSort
+    Filterable
+    Sortable
 */
 namespace Rql.NET
 {
-    [AttributeUsage(AttributeTargets.Class)]
-    public class Filterable : Attribute
-    {
-        internal readonly string[] Props;
+    // [AttributeUsage(AttributeTargets.Class)]
+    // public class Filterable : Attribute
+    // {
+    //     internal readonly string[] Props;
 
-        public Filterable(params string[] props)
-        {
-            Props = props;
-        }
-    }
+    //     public Filterable(params string[] props)
+    //     {
+    //         Props = props;
+    //     }
+    // }
 
-    [AttributeUsage(AttributeTargets.Class)]
-    public class Sortable : Attribute
-    {
-        internal readonly string[] Props;
+    // [AttributeUsage(AttributeTargets.Class)]
+    // public class Sortable : Attribute
+    // {
+    //     internal readonly string[] Props;
 
-        public Sortable(params string[] props)
-        {
-            Props = props;
-        }
-    }
+    //     public Sortable(params string[] props)
+    //     {
+    //         Props = props;
+    //     }
+    // }
 
 
+    /// <summary>
+    /// Ignores the class property entirely.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class Ignore : Attribute
     {
+        /// <summary>
+        /// Prevents the target property from being sortable.
+        /// </summary>
         [AttributeUsage(AttributeTargets.Property)]
         public class Sort : Attribute
         {
         }
 
+        /// <summary>
+        /// Prevents the target property from being filterable.
+        /// </summary>
         [AttributeUsage(AttributeTargets.Property)]
         public class Filter : Attribute
         {
@@ -48,6 +59,9 @@ namespace Rql.NET
 
     public class Ops
     {
+        /// <summary>
+        /// Disallows specified operations for a given property.
+        /// </summary>
         [AttributeUsage(AttributeTargets.Property)]
         public class Disallowed : Attribute
         {
@@ -60,6 +74,10 @@ namespace Rql.NET
         }
     }
 
+
+    /// <summary>
+    /// ColumnName overrides the target column name.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class ColumnName : Attribute
     {
@@ -71,6 +89,9 @@ namespace Rql.NET
         }
     }
 
+    /// <summary>
+    /// FieldName overrides the target json field name.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class FieldName : Attribute
     {

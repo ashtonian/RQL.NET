@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace Rql.NET
 {
+
+
     public static class Defaults
     {
         // TODO: pass through parsed request sort list<string> and eventually structured rql query
@@ -16,10 +18,7 @@ namespace Rql.NET
         public static Func<string, string> DefaultColumnNamer = x => x;
         public static Func<string, string> DefaultFieldNamer = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
         public static IOpMapper DefaultOpMapper = new SqlMapper();
-        public static Dictionary<Type, ClassSpec> TypeCache = new Dictionary<Type, ClassSpec>();
-
-        public static Func<Type, ClassSpec>
-            CacheResolver = type => TypeCache.ContainsKey(type) ? TypeCache[type] : null;
+        public static ClassSpecCache SpecCache = new InMemoryClassSpecCache();
 
         public static Func<string, Type, object, (object, IError)> DefaultConverter =
             (fieldName, type, raw) =>

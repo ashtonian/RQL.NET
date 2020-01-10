@@ -5,8 +5,15 @@ using System.Reflection;
 
 namespace Rql.NET
 {
+    /// <summary>
+    /// FieldSpec contains all the field (class property) meta data required to parse information for that field from json.
+    /// </summary>
     public class FieldSpec
     {
+        /// <summary>
+        /// json field name.
+        /// </summary>
+        /// <value></value>
         public string Name { get; set; }
         public string ColumnName { get; set; }
         public HashSet<string> Ops { get; set; }
@@ -16,6 +23,9 @@ namespace Rql.NET
         public Func<string, Type, object, (object, IError)> Converter { get; set; }
     }
 
+    /// <summary>
+    /// Contains all the required metadata to parse an object.
+    /// </summary>
     public class ClassSpec
     {
         public Dictionary<string, FieldSpec> Fields { get; set; }
@@ -23,6 +33,31 @@ namespace Rql.NET
         public Func<string, Type, object, (object, IError)> Converter { get; set; }
     }
 
+
+    public interface ClassSpecCache
+    {
+        ClassSpec Get(Type t);
+        void Set(Type t, ClassSpec spec);
+    }
+
+    public class InMemoryClassSpecCache : ClassSpecCache
+    {
+        private static Dictionary<Type, ClassSpec> TypeCache = new Dictionary<Type, ClassSpec>();
+
+        public ClassSpec Get(Type t)
+        {
+            return TypeCache.ContainsKey(t) ? TypeCache[t] : null;
+        }
+
+        public void Set(Type t, ClassSpec spec)
+        {
+            TypeCache.Add(t, spec);
+        }
+    }
+
+    /// <summary>
+    /// Uses reflection (once, then cached) to generate required parse metadata.
+    /// </summary>
     public class ClassSpecBuilder
     {
         private readonly Func<string, string> _columnNamer;
@@ -46,22 +81,30 @@ namespace Rql.NET
             _converter = converter;
         }
 
+        /// <summary>
+        /// Generates and caches all required metadata to parse an object.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
         public ClassSpec Build(Type t)
         {
-            var spec = Defaults.CacheResolver(t);
+            var spec = Defaults.SpecCache.Get(t);
             if (spec != null) return spec;
 
             var fields = new Dictionary<string, FieldSpec>();
 
             var properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             var classAttributes = t.GetCustomAttributes(true).ToList();
-            // TODO
-            var classFilter = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
-            var classSortable = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
 
-            // TODO: is class use name resolver and concat fields to class 
+            // TODO: implement class props
+            // var classFilter = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
+            // var classSortable = classAttributes?.OfType<Filterable>()?.FirstOrDefault();
+
+            // TODO: is class use name resolver and concat fields to class
             // v1 flat table nested class
-            // v2 assume table is joined, or do a sub query, or both? 
+            // v2 assume table is joined, or do a sub query, or both?
+
+            // loop through class properties and generate field spec
             foreach (var p in properties)
             {
                 var attributes = p.GetCustomAttributes(true);
@@ -106,7 +149,7 @@ namespace Rql.NET
                 Validator = _validator ?? Defaults.DefaultValidator
             };
 
-            Defaults.TypeCache.Add(t, spec);
+            Defaults.SpecCache.Set(t, spec);
             return spec;
         }
     }

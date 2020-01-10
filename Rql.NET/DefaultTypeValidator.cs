@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Rql.NET
 {
+    /// <summary>
+    /// This is validates that the json type is compatible and convertable to the corresponding c# type.
+    /// </summary>
     public static class DefaultTypeValidator
     {
         private static readonly Dictionary<Type, HashSet<Type>> TypeMap = new Dictionary<Type, HashSet<Type>>
@@ -64,7 +67,7 @@ namespace Rql.NET
             switch (value)
             {
                 case null:
-                    break; // TODO: 
+                    break; // TODO:
                 case IEnumerable<object> objList:
                     {
                         foreach (var v in objList)

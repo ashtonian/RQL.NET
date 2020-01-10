@@ -3,13 +3,19 @@ using System.Collections.Generic;
 
 namespace Rql.NET
 {
+
+    /// <summary>
+    /// Responsible for creating backend query field tokens. Implementation must potentially account for duplicate field names being used within the same backend query.
+    /// </summary>
     public interface IParameterTokenizer
     {
         string GetToken(string fieldName, Type propType);
     }
 
 
-    // produces @1, @2
+    /// <summary>
+    /// Simple index iterator tokenizer. Given "fieldName, fieldName, anotherFieldName" it will return "@1, @2, @3"
+    /// </summary>
     public class IndexTokenizer : IParameterTokenizer
     {
         private readonly string _tokenPrefix;
@@ -26,7 +32,9 @@ namespace Rql.NET
         }
     }
 
-    // produces @City and @City2
+    /// <summary>
+    /// Returns named tokens matching field name. Given "fieldName, fieldName, anotherFieldName" it will return "@fieldName1, @fieldName2, @anotherFieldName"
+    /// </summary>
     public class NamedTokenizer : IParameterTokenizer
     {
         private readonly Dictionary<string, int> _propCount = new Dictionary<string, int>();

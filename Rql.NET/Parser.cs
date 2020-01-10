@@ -6,15 +6,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 /* TODO
-    gentle validation flag ie if invalid op or field is entered drop and move 
-    benchmark on top of json deserialization 
-    example integrations: dapper, dapper.crud/extensions(limit+offset), sql mapper
-    package(core,.sql) + build 
-    try with DI framework, mvc/web-api + multi target
-    pull out json deserializer and use own tree {left, v, right, isField, isOp...}
-    js + typescript lib
-    investigate json ops
-    validate and right side is object and, or/nor is array
  */
 
 namespace Rql.NET
@@ -124,7 +115,7 @@ namespace Rql.NET
             // }
             // catch (Exception e)
             // {
-            //     throw e; // TODO: 
+            //     throw e; // TODO:
             // }
         }
 
@@ -210,17 +201,17 @@ namespace Rql.NET
                 }
                 else if (idx > 0 && idx < container.Count)
                 {
-                    // TODO: merge with upper if 
-                    // TODO: fix so that [] are ORed and {} are objects 
+                    // TODO: merge with upper if
+                    // TODO: fix so that [] are ORed and {} are objects
                     // TODO: validate $or:[] and $and:{}
-                    // container.Type == Object vs container.Type == JArray 
+                    // container.Type == Object vs container.Type == JArray
                     state.Query.Append($"{parser._opResolver(RqlOp.AND)} ");
                 }
 
                 var field = parser._classSpec.Fields.ContainsKey(leftSide) ? parser._classSpec.Fields[leftSide] : null;
                 var nextTerm = token.Value as JContainer;
 
-                // Parse Field value is recursive 
+                // Parse Field value is recursive
                 if (field != null && nextTerm != null)
                 {
                     ParseTerms(parser, nextTerm, leftSide, state);
@@ -238,7 +229,7 @@ namespace Rql.NET
                     ParseTerms(parser, nextTerm, leftSide, state);
                     if (container.Count > 0) state.Query.Append(") ");
                 }
-                // Right side is primitive and and field is left side or parent 
+                // Right side is primitive and and field is left side or parent
                 else if (RqlOp.IsOp(leftSide) || field != null)
                 {
                     var parentField = parser._classSpec.Fields.ContainsKey(parentToken)

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Rql.NET
 {
+    /// <summary>
+    /// Responsible for mapping rql operations to the corresponding backend (sql) operation.
+    /// </summary>
     public interface IOpMapper
     {
         string GetDbOp(string rqlOp);
@@ -31,7 +34,7 @@ namespace Rql.NET
                 {RqlOp.DESC, SqlOp.DESC}
             };
 
-        // Must return RQL supported ops 
+        // Must return RQL supported ops
         public HashSet<string> GetSupportedOps(Type type)
         {
             var numerics = new HashSet<Type>
@@ -53,7 +56,7 @@ namespace Rql.NET
                 typeof(char[]),
                 typeof(IEnumerable<char>)
             };
-            var bools = new HashSet<Type> {typeof(bool)};
+            var bools = new HashSet<Type> { typeof(bool) };
             var dateTime = new HashSet<Type>
             {
                 typeof(DateTime)
@@ -117,6 +120,9 @@ namespace Rql.NET
         }
     }
 
+    /// <summary>
+    /// Contains all of the Sql operation string tokens.
+    /// </summary>
     public static class SqlOp
     {
         public const string EQ = "=";
@@ -156,6 +162,9 @@ namespace Rql.NET
         }
     }
 
+    /// <summary>
+    /// Contains all of the rql operation string tokens.
+    /// </summary>
     public static class RqlOp
     {
         public const string ASC = "+";
