@@ -177,6 +177,7 @@ namespace Rql.NET
         public static readonly string GTE = $"{Defaults.Prefix}gte";
         public static readonly string LIKE = $"{Defaults.Prefix}like";
         public static readonly string OR = $"{Defaults.Prefix}or";
+
         public static readonly string NOR = $"{Defaults.Prefix}nor";
         public static readonly string NOT = $"{Defaults.Prefix}not";
         public static readonly string AND = $"{Defaults.Prefix}and";

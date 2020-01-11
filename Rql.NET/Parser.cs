@@ -5,9 +5,6 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-/* TODO
- */
-
 namespace Rql.NET
 {
     public class DbExpression
@@ -40,9 +37,9 @@ namespace Rql.NET
         }
     }
 
-    public class Parser<T> : RqlParser, IRqlParser<T>
+    public class RqlParser<T> : RqlParser, IRqlParser<T>
     {
-        public Parser(
+        public RqlParser(
             Func<string, string> opResolver = null,
             Func<IParameterTokenizer> tokenizerFactory = null
         )
@@ -62,6 +59,8 @@ namespace Rql.NET
     public interface IRqlParser
     {
         (DbExpression, IEnumerable<IError>) Parse(string toParse);
+        (DbExpression, IEnumerable<IError>) Parse(RqlExpression rqlExpression);
+
     }
 
     public class RqlParser : IRqlParser
@@ -122,13 +121,13 @@ namespace Rql.NET
 
         public static (DbExpression, IEnumerable<IError>) Parse<T>(string toParse)
         {
-            var parser = new Parser<T>();
+            var parser = new RqlParser<T>();
             return parser.Parse(toParse);
         }
 
         public static (DbExpression, IEnumerable<IError>) Parse<T>(RqlExpression rqlExpression)
         {
-            var parser = new Parser<T>();
+            var parser = new RqlParser<T>();
             return parser.Parse(rqlExpression);
         }
         public (DbExpression, IEnumerable<IError>) Parse(RqlExpression rqlExpression)
@@ -231,6 +230,7 @@ namespace Rql.NET
                     || leftSide == RqlOp.NOR
                 )
                 {
+                    // TODO: nor bug? need a not for nor somewhere?
                     // Left side is an operation so before we go on lets add our brackets
                     if (container.Count > 0) state.Query.Append("( ");
                     ParseTerms(parser, nextTerm, leftSide, state);
@@ -311,7 +311,7 @@ namespace Rql.NET
         }
 
         /// <summary>
-        /// This is just a massager for unwrapping primitive values (including arrays of primitives) from a JProperty.
+        /// This is just a massager for unwrapping primitive values (including arrays of primitives) from a JProperty aka a json token.
         /// </summary>
         /// <param name="jToken"></param>
         /// <param name="expectArray"></param>

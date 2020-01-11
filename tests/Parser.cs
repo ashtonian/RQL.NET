@@ -29,7 +29,7 @@ namespace tests
     public class ParserTests
     {
         /*
-            Test Plan: 
+            Test Plan:
                 Attributes Ignore, Names
                 Sort
                 Limit, Offset GetPage
@@ -38,10 +38,10 @@ namespace tests
         [Fact]
         public void Complex()
         {
-            var raw = @"{ 
-                ""filter"": { 
+            var raw = @"{
+                ""filter"": {
                             ""t_Long"": 3,
-                            ""$or"" : [ 
+                            ""$or"" : [
                                 {""t_Long"" : {""$gte"" : 1 }},
                                 {""t_Long"" : {""$lte"" : 5 }},
                                 {""t_Long"" : 20 }
@@ -65,9 +65,9 @@ namespace tests
         {
             IRqlParser<TestClass> test = new Parser<TestClass>();
             var raw = @"{
-                    ""filter"": { 
+                    ""filter"": {
                             ""t_Long"": 3,
-                            ""$or"" : [ 
+                            ""$or"" : [
                                 {""t_Long"" : {""$gte"" : 1 }},
                                 {""t_Long"" : {""$lte"" : 5 }},
                                 {""t_Long"" : 20 }
@@ -82,16 +82,44 @@ namespace tests
             Console.WriteLine(values);
         }
 
+        [Fact]
+        public void RobustUse()
+        {
+            // TODO: verify all dbExpression property values are equal
+            var rawJson = "";
+
+            // Statically parse raw json
+            var (dbExpression, err) = RqlParser.Parse<TestClass>(rawJson);
+
+            // Alternatively parse a `RqlExpression` useful for avoiding nasty C# json string literals
+            var rqlExpression = new RqlExpression
+            {
+                Filter = new Dictionary<string, object>() { },
+            };
+            (dbExpression, err) = RqlParser.Parse<TestClass>(rqlExpression);
+
+            // Alternatively you can use a generic instance
+            IRqlParser<TestClass> genericParser = new RqlParser<TestClass>();
+            (dbExpression, err) = genericParser.Parse(rawJson);
+            (dbExpression, err) = genericParser.Parse(rqlExpression);
+
+            // Alternatively you can use a non-generic instance
+            var classSpec = new ClassSpecBuilder().Build(typeof(TestClass));
+            IRqlParser parser = new RqlParser(classSpec);
+            (dbExpression, err) = parser.Parse(rawJson);
+            (dbExpression, err) = parser.Parse(rqlExpression);
+        }
+
 
         [Fact]
         public void SimpleAnd()
         {
-            var raw = @"{   
-                        ""filter"": { 
+            var raw = @"{
+                        ""filter"": {
                             ""t_Long"": 3,
-                            ""t_Int"": 2, 
-                            ""t_Float"": 3.4, 
-                            ""t_String"": ""str"", 
+                            ""t_Int"": 2,
+                            ""t_Float"": 3.4,
+                            ""t_String"": ""str"",
                             ""t_Bool"": true,
                             ""t_DateTime"" : ""2019-03-20T01:21:25.467589-05:00"",
                             ""t_DateTime2"" : 1553063286
