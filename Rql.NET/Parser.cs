@@ -148,14 +148,16 @@ namespace Rql.NET
 
             foreach (var s in sortArry)
             {
-                var sortStr = s.Value<string>();
+                // get sort direction
                 var sortDir = RqlOp.ASC;
+                var sortStr = s.Value<string>();
                 if (sortStr.StartsWith(RqlOp.ASC) || sortStr.StartsWith(RqlOp.DESC))
                 {
                     sortDir = sortStr[0].ToString();
                     sortStr = sortStr.Substring(1);
                 }
 
+                // verifies field is sortable
                 var sqlSort = opResolver(sortDir);
                 var val = s.Value<string>();
                 var fieldSpec = classSpec.Fields.ContainsKey(val) ? classSpec.Fields[val] : null;
@@ -165,6 +167,7 @@ namespace Rql.NET
                     continue;
                 }
 
+                // adds sql sort statement
                 sortOut.Add($"{fieldSpec.ColumnName} {sqlSort} ");
             }
 
@@ -185,21 +188,22 @@ namespace Rql.NET
 
             if (state == null) state = new ParseState(parser._tokenizerFactory());
 
-            var idx = -1;
+            var idx = 0;
             foreach (var raw in container.Children())
             {
                 idx++;
                 var token = raw as JProperty ?? raw.First() as JProperty;
                 var leftSide = token?.Name;
 
-                if (idx > 0 && idx < container.Count && RqlOp.IsOp(parentToken))
+                if (idx > 1 && idx < container.Count + 1 && RqlOp.IsOp(parentToken))
                 {
+                    // This adds "and","or" sql tokens to the query if they are needed
                     if (parentToken == RqlOp.OR || parentToken == RqlOp.AND)
                         state.Query.Append($"{parser._opResolver(parentToken)} ");
-                    else if (parentToken == RqlOp.NOT) state.Query.Append($"{parser._opResolver(RqlOp.AND)} ");
                     else if (parentToken == RqlOp.NOR) state.Query.Append($"{parser._opResolver(RqlOp.OR)} ");
+                    else if (parentToken == RqlOp.NOT) state.Query.Append($"{parser._opResolver(RqlOp.AND)} ");
                 }
-                else if (idx > 0 && idx < container.Count)
+                else if (idx > 1 && idx < container.Count + 1)
                 {
                     // TODO: merge with upper if
                     // TODO: fix so that [] are ORed and {} are objects
@@ -208,15 +212,17 @@ namespace Rql.NET
                     state.Query.Append($"{parser._opResolver(RqlOp.AND)} ");
                 }
 
+                // get a fieldspec if the left json token matchs a known field name
                 var field = parser._classSpec.Fields.ContainsKey(leftSide) ? parser._classSpec.Fields[leftSide] : null;
                 var nextTerm = token.Value as JContainer;
 
-                // Parse Field value is recursive
+
                 if (field != null && nextTerm != null)
                 {
+                    // left is known field and nextTerm is a json container ie {} or []
+                    // recurse, recurse
                     ParseTerms(parser, nextTerm, leftSide, state);
                 }
-                // Parse recursive op
                 else if (
                     RqlOp.IsOp(leftSide)
                     && leftSide == RqlOp.OR
@@ -225,13 +231,16 @@ namespace Rql.NET
                     || leftSide == RqlOp.NOR
                 )
                 {
+                    // Left side is an operation so before we go on lets add our brackets
                     if (container.Count > 0) state.Query.Append("( ");
                     ParseTerms(parser, nextTerm, leftSide, state);
                     if (container.Count > 0) state.Query.Append(") ");
                 }
-                // Right side is primitive and and field is left side or parent
                 else if (RqlOp.IsOp(leftSide) || field != null)
                 {
+                    // recursion root
+                    // right side is a primitive value so we are at the bottom
+                    // this means the field token is left or the parent
                     var parentField = parser._classSpec.Fields.ContainsKey(parentToken)
                         ? parser._classSpec.Fields[parentToken]
                         : null;
@@ -240,6 +249,7 @@ namespace Rql.NET
                 }
                 else
                 {
+                    // recursion root - error
                     state.Errors.Add(new Error($"invalid field or op: '{leftSide}', parent: '{parentToken}'"));
                 }
             }
@@ -251,6 +261,14 @@ namespace Rql.NET
             );
         }
 
+        /// <summary>
+        /// This function adds the final statement ie " some_col_name >= 5 "
+        /// </summary>
+        /// <param name="parser"></param>
+        /// <param name="fieldSpec"></param>
+        /// <param name="rqlOp"></param>
+        /// <param name="val"></param>
+        /// <param name="state"></param>
         private static void ResolveNode(
             RqlParser parser,
             FieldSpec fieldSpec,
@@ -259,6 +277,7 @@ namespace Rql.NET
             ParseState state
         )
         {
+
             var sqlOp = parser._opResolver(rqlOp);
             if (sqlOp == null)
             {
@@ -266,13 +285,17 @@ namespace Rql.NET
                 return;
             }
 
+            // validate this field supports this operation
             if (!fieldSpec.Ops.Contains(rqlOp))
             {
                 state.Errors.Add(new Error($"'{fieldSpec.Name}' does not support op: '{rqlOp}'"));
                 return;
             }
 
+            // unwrap primitive
             var preVal = PrepPrim(val, rqlOp == RqlOp.IN || rqlOp == RqlOp.NIN);
+
+            // gets the sql query parameter name, and converted value
             var (key, processedVal, err) = GetParameter(fieldSpec, preVal, state.ParameterTokenizer,
                 parser._classSpec.Converter, parser._classSpec.Validator);
             if (err != null)
@@ -281,10 +304,18 @@ namespace Rql.NET
                 return;
             }
 
+            // adds sql query paramters to param dictionary
             state.FilterParameters.Add(key, processedVal);
+            // adds sql conditional to query
             state.Query.Append($"{fieldSpec.ColumnName} {sqlOp} {key} ");
         }
 
+        /// <summary>
+        /// This is just a massager for unwrapping primitive values (including arrays of primitives) from a JProperty.
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="expectArray"></param>
+        /// <returns></returns>
         private static object PrepPrim(JProperty jToken, bool expectArray = false)
         {
             if (expectArray)
@@ -300,6 +331,10 @@ namespace Rql.NET
             return jValue?.Value;
         }
 
+        /// <summary>
+        /// This converts then validates the token primitive if a converter, or validator are provided for a given field.
+        /// </summary>
+        /// <returns></returns>
         private static (string, object, IError) GetParameter(
             FieldSpec field,
             object val,
@@ -311,6 +346,7 @@ namespace Rql.NET
             if (val == null) return (null, null, new Error("could not parse right side as a valid primitive"));
             var converter = field.Converter ?? defaultConverter;
 
+            // convert raw primitive if converter is provided for this field
             if (converter != null)
             {
                 var (v, err) = converter(field.Name, field.PropType, val);
@@ -318,6 +354,7 @@ namespace Rql.NET
                 val = v;
             }
 
+            // validates the field value
             var validator = field.Validator ?? defaultValidator;
             if (validator != null)
             {
@@ -325,6 +362,7 @@ namespace Rql.NET
                 if (err != null) return (null, null, err);
             }
 
+            // gets the parameter token name ie "someJsonField" -> "@someJsonField"
             var parameterName = tokenizer.GetToken(field.Name, field.PropType);
 
             return (parameterName, val, null);

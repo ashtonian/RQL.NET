@@ -1,6 +1,6 @@
-# Rql.NET
+# RQL.NET
 
-RQL.NET is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic queries. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql).
+`RQL.NET` is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic sql queries. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql).
 
 // TODO: simple screen shot
 
@@ -10,12 +10,26 @@ When creating a simple CRUD api its often a requirement to provide basic collect
 
 ## Getting Started
 
-Reflection is used once for a given type per application and cached using the default cache implementation.
+Reflection is used once for a given type per application and cached *when* using the default cache implementation.
 
 ### Supported Operations
 
+int,string,bool |$eq| =
+int,string,bool |$neq|!=
+int,string,bool |$lt| <
+int,string,bool |$gt| >
+int,string,bool |$lte| <=
+int,string,bool |$gte| >=
+int,string,bool |$like| like
+int,string,bool |$or| or
+int,string,bool |$nor| nor
+int,string,bool |$not|not
+int,string,bool |$and|and
+int,string,bool |$in|in
+int,string,bool |$nin|nin
 
-## Customization
+
+## Hackability
 
 This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](Rql.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](Rql.NET/Defaults.cs) and [`Defaults.DefaultValidator`](Rql.NET/DefaultTypeValidator.cs).
 
@@ -49,9 +63,10 @@ This library was structured to be a highly configurable parser. Most of the pars
   - [ ] integrations - dapper, dapper.crud/extensions(limit+offset), sql mapper
 - [ ] Release
   - [ ] enable multi platform targeting
-  - [ ] consider build server?
+  - [ ] auto build / publish
   - [ ] share/publish
-- [ ] fix stricter validation - validate and right side is object and, or/nor is array
+- [ ] fix stricter validation - right side init object is and, or/nor is array
+- [ ] fix empty object validation #1
 
 ## vNext
 
@@ -63,12 +78,15 @@ This library was structured to be a highly configurable parser. Most of the pars
 - [ ] nested "complex" data types support via joins or sub queries or..
 - [ ] option to ignore validation
 - [ ] better C# side query building solution because escaped json strings suck in .NET
+- [ ] consider adjusting output to be an expression tree that people can access for hackability
 - [ ] Better Test coverage
   - [ ] all attributes
   - [ ] all ops
   - [ ] IOpMapper
   - [ ] Validators
+  - [ ] IEnumberable and [] types
 - [ ] benchmark tests, run on PRs
+- [ ] would be cool to generate part of a swagger documentation from a class spec..
 - [ ] js client lib
 - [ ] contributing guidelines and issue template
 - [ ] remove 3rd party dependency on JSON.NET, use own tree parser. Initial leaf spec: {left, v, right, isField, isOp, fieldSpecProperties...}
