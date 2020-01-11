@@ -79,24 +79,23 @@ public class SomeClass {
 This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](Rql.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](Rql.NET/Defaults.cs) and [`Defaults.DefaultValidator`](Rql.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed via public constructors to enable this packge to be used as a library. You could also implement a [custom class specification](Rql.NET/ClassSpecBuilder.cs), [field specification](Rql.NET/ClassSpecBuilder.cs), and [operation mapper](Rql.NET/IOpMapper.cs) relatively easily.
 
 ```c#
-    public static class Defaults
-    {
-        public static string SortSeparator = ",";
-        public static string Prefix = "$";
-        public static int Offset = 0;
-        public static int Limit = 10000;
-        public static Func<IParameterTokenizer> DefaultTokenizerFactory = () => new NamedTokenizer();
-        public static Func<string, Type, object, IError> DefaultValidator = DefaultTypeValidator.Validate;
-        public static Func<string, string> DefaultColumnNamer = x => x;
-        public static Func<string, string> DefaultFieldNamer = x => {...};
-        public static IOpMapper DefaultOpMapper = new SqlMapper();
-        public static ClassSpecCache SpecCache = new InMemoryClassSpecCache();
-        public static Func<string, Type, object, (object, IError)> DefaultConverter =
-            (fieldName, type, raw) =>
-            {
-              ...
-            };
-    }
+public static class Defaults
+{
+    public static string SortSeparator = ",";
+    public static string Prefix = "$";
+    public static int Offset = 0;
+    public static int Limit = 10000;
+    public static Func<IParameterTokenizer> DefaultTokenizerFactory = () => new NamedTokenizer();
+    public static Func<string, Type, object, IError> DefaultValidator = DefaultTypeValidator.Validate;
+    public static Func<string, string> DefaultColumnNamer = x => x;
+    public static Func<string, string> DefaultFieldNamer = x => {...};
+    public static IOpMapper DefaultOpMapper = new SqlMapper();
+    public static ClassSpecCache SpecCache = new InMemoryClassSpecCache();
+    public static Func<string, Type, object, (object, IError)> DefaultConverter =
+        (fieldName, type, raw) =>
+        {
+          ...
+        };
 }
 ```
 
@@ -116,6 +115,7 @@ The parser uses reflection and by **default** its done once per class and cached
 
 ## vNext
 
+- [ ] document removing of token prefix to use with c# dynamic json literals
 - [ ] attributes
   - [ ] class level
   - [ ] CustomTypeConverter
@@ -128,7 +128,6 @@ The parser uses reflection and by **default** its done once per class and cached
 - [ ] Better Test coverage
   - [ ] all attributes
   - [ ] all ops
-  - [ ] IOpMapper
   - [ ] Validators
   - [ ] IEnumberable and [] types
 - [ ] benchmark tests, run on PRs
