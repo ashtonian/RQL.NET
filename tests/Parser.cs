@@ -63,7 +63,7 @@ namespace tests
         [Fact]
         public void Play()
         {
-            IRqlParser<TestClass> test = new Parser<TestClass>();
+            IRqlParser<TestClass> test = new RqlParser<TestClass>();
             var raw = @"{
                     ""filter"": {
                             ""t_Long"": 3,
@@ -82,33 +82,6 @@ namespace tests
             Console.WriteLine(values);
         }
 
-        [Fact]
-        public void RobustUse()
-        {
-            // TODO: verify all dbExpression property values are equal
-            var rawJson = "";
-
-            // Statically parse raw json
-            var (dbExpression, err) = RqlParser.Parse<TestClass>(rawJson);
-
-            // Alternatively parse a `RqlExpression` useful for avoiding nasty C# json string literals
-            var rqlExpression = new RqlExpression
-            {
-                Filter = new Dictionary<string, object>() { },
-            };
-            (dbExpression, err) = RqlParser.Parse<TestClass>(rqlExpression);
-
-            // Alternatively you can use a generic instance
-            IRqlParser<TestClass> genericParser = new RqlParser<TestClass>();
-            (dbExpression, err) = genericParser.Parse(rawJson);
-            (dbExpression, err) = genericParser.Parse(rqlExpression);
-
-            // Alternatively you can use a non-generic instance
-            var classSpec = new ClassSpecBuilder().Build(typeof(TestClass));
-            IRqlParser parser = new RqlParser(classSpec);
-            (dbExpression, err) = parser.Parse(rawJson);
-            (dbExpression, err) = parser.Parse(rqlExpression);
-        }
 
 
         [Fact]

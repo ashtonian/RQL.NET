@@ -48,9 +48,10 @@ IRqlParser parser = new RqlParser(classSpec);
 ### Common Customizations
 
 ```c#
-
 public class SomeClass {
-
+        [Rql.NET.Ops.Dissallowed()]
+        [Rql.NET.ColumnName("type")]
+        [Rql.NET.FieldName("type")]
 }
 
 ```
@@ -103,13 +104,9 @@ This library was structured to be a highly configurable parser. Most of the pars
 
 The parser uses reflection and by **default** its done once per class and cached. When using the typed parse statements `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant json serialization and then deserialization because this was built piggy backing off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
 
-
 ## TODO
 
-- [ ] Document
-  - [ ] attributes via a "do it all class"
-  - [ ] simple quick start example
-  - [ ] integrations - dapper, dapper.crud/extensions(limit+offset), sql mapper
+- [ ] better coverage
 - [ ] Release
   - [ ] enable multi platform targeting
   - [ ] auto build / publish

@@ -13,6 +13,6 @@
             <dependency id="Newtonsoft.Json" version="[12.0.1,13.0)" />
         </dependencies>
         <description>RQL is a resource query language for REST. It provides a simple and light-weight API for adding dynamic querying capabilities to web-applications that use SQL-based database.</description>
-        <tags>web utility json url rql sql query dynamic builder parsing</tags>
+        <tags>web utility json url rql sql query dynamic builder parsing parser</tags>
     </metadata>
 </package>

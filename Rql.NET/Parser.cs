@@ -215,7 +215,6 @@ namespace Rql.NET
                 var field = parser._classSpec.Fields.ContainsKey(leftSide) ? parser._classSpec.Fields[leftSide] : null;
                 var nextTerm = token.Value as JContainer;
 
-
                 if (field != null && nextTerm != null)
                 {
                     // left is known field and nextTerm is a json container ie {} or []
