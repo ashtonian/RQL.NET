@@ -43,17 +43,79 @@ IRqlParser parser = new RqlParser(classSpec);
 (dbExpression, err) = parser.Parse(rqlExpression);
 ```
 
-// TODO: webapi, dapper,dapper.crud, mapper
+### Examples
+
+#### Web Api
+
+```c#
+[HttpPost("api/rql")]
+public async void Rql([FromBody] dynamic rqlIn)
+{
+    var (dbExpression, errs) = parser.Parse((rqlIn as object).ToString());
+}
+```
+
+#### ADO Command
+
+```c#
+ using (var connection = await _connectionFactory.GetConnection())
+using (SqlCommand command = new SqlCommand())
+{
+  command.CommandText = $"SELECT * FROM TestClass WHERE ${dbExpression.Filter} LIMIT ${dbExpression.Limit} OFFSET ${dbExpression.Offset} ORDER BY ${dbExpression.Sort}";
+  command.Parameters.AddRange(dbExpression.Parameters.Select(x => new SqlParameter(x.Key, x.Value)).ToArray());
+  using (var reader = command.ExecuteReader())
+  {
+      // do stuff
+  }
+}
+```
+
+#### Dapper
+
+```c#
+using (var connection = await _connectionFactory.GetConnection())
+{
+  connection.Open();
+  var parameters = new DynamicParameters(dbExpression.Parameters);
+  var sql = $"SELECT * FROM TestClass WHERE ${dbExpression.Filter} LIMIT ${dbExpression.Limit} OFFSET ${dbExpression.Offset} ORDER BY ${dbExpression.Sort}";
+  var results = await connection.QueryAsync<TestClass>(sql, parameters);
+  // do stuff
+}
+```
+
+#### Dapper SimpleCRUD
+
+```c#
+ using (var connection = await _connectionFactory.GetConnection())
+{
+  connection.Open();
+  var parameters = new DynamicParameters(dbExpression.Parameters);
+  var page = Utility.GetPage(dbExpression.Offset, dbExpression.Limit);
+  var where = $"WHERE {dbExpression.Filter}";
+  var results = (await connection.GetListPagedAsync<TestClass>(page,dbExpression.Limit, where, dbExpression.Sort, parameters)).ToList();
+  // do stuff
+}
+```
 
 ### Common Customizations
 
 ```c#
-public class SomeClass {
-        [Rql.NET.Ops.Dissallowed()]
-        [Rql.NET.ColumnName("type")]
-        [Rql.NET.FieldName("type")]
+public class SomeClass
+{
+  // prevents operations
+  [Rql.NET.Ops.Disallowed("$like", "$eq")]
+  // overrides column namer
+  [Rql.NET.ColumnName("type")]
+  // overrides (json) namer
+  [Rql.NET.FieldName("type")]
+  // ignores entirely
+  [Rql.NET.Ignore.Sort]
+  // prevents sorting
+  [Rql.NET.Ignore]
+  // prevents filtering
+  [Rql.NET.Ignore.Filter]
+  public string SomeProp { get; set; }
 }
-
 ```
 
 ### RQL Operations
@@ -76,7 +138,7 @@ public class SomeClass {
 
 ## Hackability
 
-This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](Rql.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](Rql.NET/Defaults.cs) and [`Defaults.DefaultValidator`](Rql.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed via public constructors to enable this packge to be used as a library. You could also implement a [custom class specification](Rql.NET/ClassSpecBuilder.cs), [field specification](Rql.NET/ClassSpecBuilder.cs), and [operation mapper](Rql.NET/IOpMapper.cs) relatively easily.
+This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](Rql.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](Rql.NET/Defaults.cs) and [`Defaults.DefaultValidator`](Rql.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed to enable this package to be used as a library. You could also implement a [custom class specification](Rql.NET/ClassSpecBuilder.cs), [field specification](Rql.NET/ClassSpecBuilder.cs), and [operation mapper](Rql.NET/IOpMapper.cs) to add pretty heavy customizations including custom types and operations.
 
 ```c#
 public static class Defaults
@@ -101,10 +163,11 @@ public static class Defaults
 
 ## Note on Performance
 
-The parser uses reflection and by **default** its done once per class and cached. When using the typed parse statements `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant json serialization and then deserialization because this was built piggy backing off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
+The parser uses reflection and by **default** its done once per class and cached. Additionally when using the typed parse commands `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant json serialization and then deserialization because this was built piggy backing off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
 
 ## TODO
 
+- [ ] .netcore3
 - [ ] better coverage
 - [ ] Release
   - [ ] enable multi platform targeting

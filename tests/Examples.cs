@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Data;
+using System.Data.SqlClient; // TODO: Microsoft.Data.SqlClient
+using System.Linq;
+using System.Threading.Tasks;
+using Dapper;
 using Rql.NET;
 using Xunit;
 
@@ -8,83 +12,115 @@ namespace tests
 {
     public class Examples
     {
+        private IConnectionFactory _connectionFactory;
         public class SomeClass
-        {   // Rql.NET.RqlOp.LIKE - cant use internals because they are const and c# doesn't like that
+        {
+            // prevents operations
             [Rql.NET.Ops.Disallowed("$like", "$eq")]
+            // overrides column namer
             [Rql.NET.ColumnName("type")]
+            // overrides (json) namer
             [Rql.NET.FieldName("type")]
-            [Rql.NET.Ignore]
+            // ignores entirely
             [Rql.NET.Ignore.Sort]
+            // prevents sorting
+            [Rql.NET.Ignore]
+            // prevents filtering
             [Rql.NET.Ignore.Filter]
-            public string SomeProperty { get; set; }
+            public string SomeProp { get; set; }
         }
 
-        // TODO: doesn't do anything currently but document usage, intended to verify all dbExpression property values are equal
-        [Fact]
+        // [Fact]
         public void RobustUse()
         {
+
             var rawJson = "";
 
             // Statically parse raw json
-            var (dbExpression, err) = RqlParser.Parse<TestClass>(rawJson);
+            var (dbExpression, errs) = RqlParser.Parse<TestClass>(rawJson);
 
             // Alternatively parse a `RqlExpression` useful for avoiding nasty C# json string literals
             var rqlExpression = new RqlExpression
             {
                 Filter = new Dictionary<string, object>() { },
             };
-            (dbExpression, err) = RqlParser.Parse<TestClass>(rqlExpression);
+            (dbExpression, errs) = RqlParser.Parse<TestClass>(rqlExpression);
 
             // Alternatively you can use a generic instance
             IRqlParser<TestClass> genericParser = new RqlParser<TestClass>();
-            (dbExpression, err) = genericParser.Parse(rawJson);
-            (dbExpression, err) = genericParser.Parse(rqlExpression);
+            (dbExpression, errs) = genericParser.Parse(rawJson);
+            (dbExpression, errs) = genericParser.Parse(rqlExpression);
 
             // Alternatively you can use a non-generic instance
             var classSpec = new ClassSpecBuilder().Build(typeof(TestClass));
             IRqlParser parser = new RqlParser(classSpec);
-            (dbExpression, err) = parser.Parse(rawJson);
-            (dbExpression, err) = parser.Parse(rqlExpression);
+            (dbExpression, errs) = parser.Parse(rawJson);
+            (dbExpression, errs) = parser.Parse(rqlExpression);
         }
 
-        // TODO: doesn't do anything currently intended to verify dapper.crud integration
-        [Fact]
-        public void DapperCrudExtensions()
+        // [Fact]
+        public async void ADOCommand()
         {
-            // using (var connection = await _connectionFactory.GetConnection())
-            // {
-            //     connection.Open();
-
-            //     var parameters = new DynamicParameters(expression.Parameters);
-
-            //     var page = Utility.GetPage(expression.Offset, expression.Limit);
-            //     var where = $"WHERE {expression.Filter}";
-
-            //     var items = (await connection.GetListPagedAsync<Item>(page, expression.Limit, where, expression.Sort, parameters)).ToList();
-            // }
+            DbExpression dbExpression = new DbExpression { };
+            using (var connection = await _connectionFactory.GetConnection())
+            using (SqlCommand command = new SqlCommand())
+            {
+                command.CommandText = $"SELECT * FROM TestClass WHERE ${dbExpression.Filter} LIMIT ${dbExpression.Limit} OFFSET ${dbExpression.Offset} ORDER BY ${dbExpression.Sort}";
+                command.Parameters.AddRange(dbExpression.Parameters.Select(x => new SqlParameter(x.Key, x.Value)).ToArray());
+                using (var reader = command.ExecuteReader())
+                {
+                    // do stuff
+                }
+            }
         }
 
-        [Fact]
-        public void Dapper()
+        // [Fact]
+        public async void DapperSimpleCRUD()
         {
-            // using (var connection = await _connectionFactory.GetConnection())
-            // {
-            //     connection.Open();
-            //     // var parameters = new DynamicParameters(expression.Parameters);
-            //     var sql = $"";
-            //     var sites = await connection.QueryAsync<SiteSetting>(sql, parameters);
-            //     return sites.SingleOrDefault();
-            // }
+            DbExpression dbExpression = new DbExpression { };
+            using (var connection = await _connectionFactory.GetConnection())
+            {
+                connection.Open();
+                var parameters = new DynamicParameters(dbExpression.Parameters);
+                var page = Utility.GetPage(dbExpression.Offset, dbExpression.Limit);
+                var where = $"WHERE {dbExpression.Filter}";
+                var results = (await connection.GetListPagedAsync<TestClass>(page, dbExpression.Limit, where, dbExpression.Sort, parameters)).ToList();
+                // do stuff
+            }
         }
 
-        [Fact]
-        public void WebApi()
+        // [Fact]
+        public async void Dapper()
         {
-            // [HttpPost("api/search")]
-            // public async Task<ActionResult<PagedResult<Items>>> Search([FromBody] dynamic rql)
-            // {
-            //     var (dbExpression, errs) = _searchParser.Parse((rql as object).ToString());
-            // }
+            DbExpression dbExpression = new DbExpression { };
+            using (var connection = await _connectionFactory.GetConnection())
+            {
+                connection.Open();
+                var parameters = new DynamicParameters(dbExpression.Parameters);
+                var sql = $"SELECT * FROM TestClass WHERE ${dbExpression.Filter} LIMIT ${dbExpression.Limit} OFFSET ${dbExpression.Offset} ORDER BY ${dbExpression.Sort}";
+                var results = await connection.QueryAsync<TestClass>(sql, parameters);
+                // do stuff
+            }
+        }
+    }
+
+    public interface IConnectionFactory
+    {
+        Task<IDbConnection> GetConnection();
+    }
+
+    public class ConnectionFactory : IConnectionFactory
+    {
+        private readonly string _connectionString;
+
+        public ConnectionFactory(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public async Task<IDbConnection> GetConnection()
+        {
+            return await Task.Run(() => new SqlConnection(_connectionString));
         }
     }
 
