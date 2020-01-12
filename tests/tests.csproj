@@ -12,6 +12,6 @@
     <PackageReference Include="Dapper.SimpleCRUD.NetCore" Version="1.0.0"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Rql.NET\Rql.NET.csproj"/>
+    <ProjectReference Include="..\RQL.NET\RQL.NET.csproj"/>
   </ItemGroup>
 </Project>

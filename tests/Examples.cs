@@ -5,7 +5,7 @@ using System.Data.SqlClient; // TODO: Microsoft.Data.SqlClient
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Rql.NET;
+using RQL.NET;
 using Xunit;
 
 namespace tests
@@ -16,24 +16,64 @@ namespace tests
         public class SomeClass
         {
             // prevents operations
-            [Rql.NET.Ops.Disallowed("$like", "$eq")]
+            [RQL.NET.Ops.Disallowed("$like", "$eq")]
             // overrides column namer
-            [Rql.NET.ColumnName("type")]
+            [RQL.NET.ColumnName("type")]
             // overrides (json) namer
-            [Rql.NET.FieldName("type")]
+            [RQL.NET.FieldName("type")]
             // ignores entirely
-            [Rql.NET.Ignore.Sort]
+            [RQL.NET.Ignore.Sort]
             // prevents sorting
-            [Rql.NET.Ignore]
+            [RQL.NET.Ignore]
             // prevents filtering
-            [Rql.NET.Ignore.Filter]
+            [RQL.NET.Ignore.Filter]
             public string SomeProp { get; set; }
+        }
+
+        public class Item
+        {
+            public bool IsDone { get; set; }
+            public DateTime UpdatedAt { get; set; }
+        }
+
+        [Fact]
+        public void QueryExamples()
+        {
+            var rqlExpression = new RqlExpression
+            {
+                Filter = new Dictionary<string, object>()
+                {
+                    ["isDone"] = true,
+                    ["$or"] = new List<object>()
+                    {
+                        new Dictionary<string, object>(){
+                            ["updatedAt"] = new Dictionary<string,object>(){
+                                ["$lt"] = "2020/01/02",
+                                ["$gt"] = 1577836800,
+                            }
+                        }
+                    },
+                },
+                Limit = 1000,
+                Offset = 0,
+                Sort = new List<string>() { "-updatedAt" },
+            };
+
+            var (result, errs) = RqlParser.Parse<Item>(rqlExpression);
+            Assert.True(errs == null);
+            var expectation = "IsDone = @isDone AND ( UpdatedAt < @updatedAt AND UpdatedAt > @updatedAt2 )";
+            Assert.Equal(expectation, result.Filter);
+            Assert.True(result.Limit == 1000);
+            Assert.True(result.Offset == 0);
+            Assert.True(result.Sort == "UpdatedAt DESC");
+            Assert.Equal(result.Parameters["@isDone"], true);
+            Assert.Equal(result.Parameters["@updatedAt"], new DateTime(2020, 01, 02));
+            Assert.Equal(result.Parameters["@updatedAt2"], new DateTime(2020, 01, 01));
         }
 
         // [Fact]
         public void RobustUse()
         {
-
             var rawJson = "";
 
             // Statically parse raw json

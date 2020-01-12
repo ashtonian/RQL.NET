@@ -1,4 +1,4 @@
-using Rql.NET;
+using RQL.NET;
 using Xunit;
 
 namespace tests

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Rql.NET
+namespace RQL.NET
 {
     /// <summary>
     /// FieldSpec contains all the field (class property) meta data required to parse information for that field from json.

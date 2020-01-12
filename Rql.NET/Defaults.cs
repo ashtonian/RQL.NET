@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Rql.NET
+namespace RQL.NET
 {
 
 
@@ -27,8 +27,8 @@ namespace Rql.NET
                 switch (raw)
                 {
                     case long longVal:
-                        var dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(longVal);
-                        return (dateTimeOffset.DateTime, null);
+                        var result2 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(longVal);
+                        return (result2, null);
                     case string strVal:
                         var success = DateTime.TryParse(strVal, out var result);
                         if (!success) return (null, new Error("unable to convert datetime"));

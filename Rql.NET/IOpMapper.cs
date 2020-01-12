@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Rql.NET
+namespace RQL.NET
 {
     /// <summary>
     /// Responsible for mapping rql operations to the corresponding backend (sql) operation.

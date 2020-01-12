@@ -1,4 +1,4 @@
-namespace Rql.NET
+namespace RQL.NET
 {
     public class Error : IError
     {

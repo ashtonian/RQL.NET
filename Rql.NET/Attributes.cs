@@ -9,7 +9,7 @@ using System;
     Filterable
     Sortable
 */
-namespace Rql.NET
+namespace RQL.NET
 {
     // [AttributeUsage(AttributeTargets.Class)]
     // public class Filterable : Attribute

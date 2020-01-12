@@ -5,7 +5,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Rql.NET
+namespace RQL.NET
 {
     public class DbExpression
     {
@@ -158,11 +158,16 @@ namespace Rql.NET
 
                 // verifies field is sortable
                 var sqlSort = opResolver(sortDir);
-                var val = s.Value<string>();
-                var fieldSpec = classSpec.Fields.ContainsKey(val) ? classSpec.Fields[val] : null;
+                var fieldSpec = classSpec.Fields.ContainsKey(sortStr) ? classSpec.Fields[sortStr] : null;
+
                 if (fieldSpec == null || !fieldSpec.IsSortable)
                 {
-                    errs.Add(new Error("not allowed to sort []"));
+                    errs.Add(new Error($"invalid sort field ${sortStr}"));
+                    continue;
+                }
+                if (fieldSpec != null && !fieldSpec.IsSortable)
+                {
+                    errs.Add(new Error($"not allowed to sort ${sortStr}"));
                     continue;
                 }
 
@@ -180,6 +185,7 @@ namespace Rql.NET
             ParseState state = null
         )
         {
+            // TODO:
             if (container == null)
             {
             }

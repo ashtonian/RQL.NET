@@ -1,49 +1,82 @@
 # RQL.NET
 
-`RQL.NET` is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic sql queries. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is mostly compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql).
-
-// TODO: simple screen shot
+`RQL.NET` is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic sql queries. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is mostly compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql) and mongodb's query language.
 
 ## Why
 
-When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. Often by adding a query parameter for each field, and when using aggregate functions having an separate composite parameter for that aggregate ie `updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at_lt < X AND updated_at_lt > Y)`.
+When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having an separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
 
 ## Getting Started
 
 ### Basic
 
-```c#
-// Statically parse raw json
-var (dbExpression, err) = RqlParser.Parse<TestClass>(rawJson);
+Client side json input:
 
-// TODO: daper or std sql usage
-// TODO: assert show sql example
+```javascript
+var rqlExpression = {
+  filter: {
+    "isDone": 1,
+    "$or":[
+        {"updatedAt": {"$lt": "2020/01/02", "$gt":1577836800}},
+      ],
+  },
+  limit : 1000,
+  offset: 0,
+  sort:["-updatedAt"],
+}
 ```
 
-### Alternatives
+C#:
 
 ```c#
-// Alternatively parse a `RqlExpression` object - useful for avoiding nasty C# json string literals
-var rqlExpression = new RqlExpression
-{
-  // TODO: create filter obj
-    Filter = new Dictionary<string, object>() { },
-};
-(dbExpression, err) = RqlParser.Parse<TestClass>(rqlExpression);
+var (dbExpression, errs) = RqlParser.Parse<TestClass>(rqlExpression);
+if(errs != null) { /*handle me*/ }
 
+Assert.True(dbExpression.Filter = "IsDone = @isDone AND ( UpdatedAt < @updatedAt AND UpdatedAt > @updatedAt2 )");
+Assert.True(dbExpression.Limit == 1000);
+Assert.True(dbExpression.Offset == 0);
+Assert.True(dbExpression.Sort == "UpdatedAt DESC");
+Assert.Equal(result.Parameters["@isDone"], true);
+Assert.Equal(result.Parameters["@updatedAt"], new DateTime(2020, 01, 02));
+Assert.Equal(result.Parameters["@updatedAt2"], new DateTime(2020, 01, 01));
+```
+
+Alternatives:
+
+```c#
 // Alternatively you can use a generic instance
 IRqlParser<TestClass> genericParser = new RqlParser<TestClass>();
-(dbExpression, err) = genericParser.Parse(rawJson);
 (dbExpression, err) = genericParser.Parse(rqlExpression);
 
 // Alternatively you can use a non-generic instance
 var classSpec = new ClassSpecBuilder().Build(typeof(TestClass));
 IRqlParser parser = new RqlParser(classSpec);
-(dbExpression, err) = parser.Parse(rawJson);
 (dbExpression, err) = parser.Parse(rqlExpression);
+
+// Alternatively parse a `RqlExpression` object
+var rqlExpression = new RqlExpression
+{
+  Filter = new Dictionary<string, object>()
+  {
+    ["isDone"] = 1,
+    ["$or"] = new List<object>()
+    {
+      new Dictionary<string, object>(){
+        ["updatedAt"] = new Dictionary<string,object>(){
+            ["$lt"] = "2020/01/02",
+            ["$gt"] = 1577836800
+        }
+      }
+    },
+  },
+  Limit = 1000,
+  Offset = 0,
+  Sort = new List<string>() { "-updatedAt" },
+};
+(dbExpression, err) = RqlParser.Parse<TestClass>(rqlExpression);
 ```
 
-### Examples
+### Integration Examples
 
 #### Web Api
 
@@ -51,7 +84,7 @@ IRqlParser parser = new RqlParser(classSpec);
 [HttpPost("api/rql")]
 public async void Rql([FromBody] dynamic rqlIn)
 {
-    var (dbExpression, errs) = parser.Parse((rqlIn as object).ToString());
+  var (dbExpression, _) = parser.Parse((rqlIn as object).ToString());
 }
 ```
 
@@ -86,7 +119,7 @@ using (var connection = await _connectionFactory.GetConnection())
 #### Dapper SimpleCRUD
 
 ```c#
- using (var connection = await _connectionFactory.GetConnection())
+using (var connection = await _connectionFactory.GetConnection())
 {
   connection.Open();
   var parameters = new DynamicParameters(dbExpression.Parameters);
@@ -103,17 +136,17 @@ using (var connection = await _connectionFactory.GetConnection())
 public class SomeClass
 {
   // prevents operations
-  [Rql.NET.Ops.Disallowed("$like", "$eq")]
+  [RQL.NET.Ops.Disallowed("$like", "$eq")]
   // overrides column namer
-  [Rql.NET.ColumnName("type")]
+  [RQL.NET.ColumnName("type")]
   // overrides (json) namer
-  [Rql.NET.FieldName("type")]
+  [RQL.NET.FieldName("type")]
   // ignores entirely
-  [Rql.NET.Ignore.Sort]
+  [RQL.NET.Ignore.Sort]
   // prevents sorting
-  [Rql.NET.Ignore]
+  [RQL.NET.Ignore]
   // prevents filtering
-  [Rql.NET.Ignore.Filter]
+  [RQL.NET.Ignore.Filter]
   public string SomeProp { get; set; }
 }
 ```
@@ -131,14 +164,14 @@ public class SomeClass
   | `$like` | `like` |             string[] |
   | `$in`   |  `in`  |   number[], string[] |
   | `$nin`  | `nin`  |   number[], string[] |
-  | `$or`   |  `or`  |                    - |
-  | `$not`  | `not`  |                    - |
-  | `$and`  | `and`  |                    - |
+  | `$or`   |  `or`  |                   [] |
+  | `$not`  | `not`  |                   {} |
+  | `$and`  | `and`  |                   {} |
   | `$nor`  |   -    |                  n/a |
 
 ## Hackability
 
-This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](Rql.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](Rql.NET/Defaults.cs) and [`Defaults.DefaultValidator`](Rql.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed to enable this package to be used as a library. You could also implement a [custom class specification](Rql.NET/ClassSpecBuilder.cs), [field specification](Rql.NET/ClassSpecBuilder.cs), and [operation mapper](Rql.NET/IOpMapper.cs) to add pretty heavy customizations including custom types and operations.
+This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](RQL.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](RQL.NET/Defaults.cs) and [`Defaults.DefaultValidator`](RQL.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed to enable this package to be used as a library. You could also implement a [custom class specification](RQL.NET/ClassSpecBuilder.cs), [field specification](RQL.NET/ClassSpecBuilder.cs), and [operation mapper](RQL.NET/IOpMapper.cs) to add pretty heavy customizations including custom types and operations.
 
 ```c#
 public static class Defaults
@@ -165,29 +198,36 @@ public static class Defaults
 
 The parser uses reflection and by **default** its done once per class and cached. Additionally when using the typed parse commands `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant json serialization and then deserialization because this was built piggy backing off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
 
-## TODO
+## Release TODO
 
-- [ ] .netcore3
 - [ ] better coverage
-- [ ] Release
-  - [ ] enable multi platform targeting
-  - [ ] auto build / publish
-  - [ ] share/publish
+- [ ] auto build / publish
+- [ ] enable multi platform targeting
+  - [ ] .netcore3,.netcore2,net46
 - [ ] fix stricter validation - right side init object is and, or/nor is array
-- [ ] fix empty object validation #1
+- [ ] fix empty object validation issue rql.net/#1
+- [ ] share/publish
 
 ## vNext
 
-- [ ] document removing of token prefix to use with c# dynamic json literals
-- [ ] attributes
-  - [ ] class level
+- [ ] typed more actionable errors
+- [ ] better C# side query building, complaints:
+  - [ ] c# string multi-line literals not nice with interpolation
+  - [ ] c# string multi-line literals require escaping double quotes
+  - [ ] rqlExpression c# creation is heavy/bulky
+  - [ ] c# dynamics don't like symbols in prop names
+  - [ ] consider fluent action  ie rqlExpression.add(condition).add() or rqlExpression.and(rqlExpression).or(rqlExpression).
+ - [ ] attributes
+  - [ ] class level attributes
   - [ ] CustomTypeConverter
   - [ ] CustomValidator
   - [ ] DefaultSort
+- [ ] integration tests
 - [ ] nested "complex" data types support via joins or sub queries or..
 - [ ] option to ignore validation
-- [ ] better C# side query building solution because escaped json strings suck in .NET
+  - [ ] document removing of token prefix to potentially use with c# dynamic json literals easier
 - [ ] consider adjusting output to be an expression tree that people can access for hackability
+  - [ ] remove 3rd party dependency on JSON.NET, Initial leaf spec: {left, v, right, isField, iParse(RqlExpression exp)s there is a redundant Op, fieldSpecProperties...}
 - [ ] Better Test coverage
   - [ ] all attributes
   - [ ] all ops
@@ -197,7 +237,5 @@ The parser uses reflection and by **default** its done once per class and cached
 - [ ] would be cool to generate part of a swagger documentation from a class spec..
 - [ ] js client lib
 - [ ] contributing guidelines and issue template
-- [ ] remove 3rd party dependency on JSON.NET, use own tre parse statementse  Initial leaf spec: {left, v, right, isField, iParse(RqlExpression exp)s there is a redudant Op, fieldSpecProperties...}
-- [ ] typed more actionable errors
 - [ ] official postgres / mongo support. Starting point: IOpMapper.
   - [ ] consider splitting package into RQL.Core and RQL.MSSQL to allow for RQL.Postgres or RQL.Mongo

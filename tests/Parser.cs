@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Rql.NET;
+using RQL.NET;
 using Xunit;
 
 namespace tests
@@ -33,7 +33,7 @@ namespace tests
                 Attributes Ignore, Names
                 Sort
                 Limit, Offset GetPage
-
+                Converter - datetime with str and epoch #
         */
         [Fact]
         public void Complex()
@@ -54,14 +54,18 @@ namespace tests
                   ";
             var (result, errs) = RqlParser.Parse<TestClass>(raw);
             Assert.True(errs == null);
-            Assert.Equal(
-                "T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int",
-                result.Filter);
+            var expectation = "T_Long = @t_Long AND ( T_Long >= @t_Long2 OR T_Long <= @t_Long3 OR T_Long = @t_Long4 ) AND T_Bool = @t_Bool AND ( T_String LIKE @t_String AND T_String != @t_String2 ) AND T_Int IN @t_Int";
             Console.WriteLine(result.Filter);
+            Assert.Equal(expectation, result.Filter);
+        }
+
+        public void ComplexDbExpression()
+        {
+            // var
         }
 
         [Fact]
-        public void Play()
+        public void Playground()
         {
             IRqlParser<TestClass> test = new RqlParser<TestClass>();
             var raw = @"{
@@ -81,8 +85,6 @@ namespace tests
             var values = JsonConvert.DeserializeObject<Dictionary<string, object>>(raw);
             Console.WriteLine(values);
         }
-
-
 
         [Fact]
         public void SimpleAnd()
@@ -105,5 +107,6 @@ namespace tests
                 "T_Long = @t_Long AND T_Int = @t_Int AND T_Float = @t_Float AND T_String = @t_String AND T_Bool = @t_Bool AND T_DateTime = @t_DateTime AND T_DateTime2 = @t_DateTime2",
                 result.Filter);
         }
+
     }
 }
