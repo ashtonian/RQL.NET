@@ -94,7 +94,7 @@ before_package:
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  - `%xunit20%\xunit.console .\tests\bin\Release\tests.dll -appveyor`
+  - '%xunit20%\xunit.console .\tests\bin\Release\tests.dll -appveyor'
 # scripts to run after tests
 after_test:
 
