@@ -58,6 +58,12 @@ before_package:
 # to disable automatic builds
 #build: off
 
+deploy:
+  provider: NuGet
+  api_key:
+    secure: QkBn6ZskcH29fb+xeOh8qQRfoJyCQUfj3ZNGEMpEtpBHZ1IFHjP2t1yaBf+zFMsR
+  on:
+    appveor_repo_tag: true
 #---------------------------------#
 #       tests configuration       #
 #---------------------------------#
