@@ -2,6 +2,10 @@
 
 `RQL.NET` is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic sql queries. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is mostly compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql) and mongodb's query language.
 
+<p align="center">
+  <img src="assets/diagram.png" alt="rql.net diagram">
+</p>
+
 ## Why
 
 When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having an separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
@@ -200,14 +204,16 @@ The parser uses reflection and by **default** its done once per class and cached
 
 ## Release TODO
 
+- [ ] auto build / publish
+- [ ] simple diagram image with class, json input, and sql.
 - [ ] better coverage
   - [ ] case: all attributes
   - [ ] case: all ops
-- [ ] auto build / publish
 - [ ] enable multi platform targeting
   - [ ] .netcore3,.netcore2,net46
 - [ ] fix stricter validation - right side init object is and, or/nor is array
-- [ ] fix empty object validation issue rql.net/#1
+- [ ] fix empty object validation  ashtonian/RQL.NET#1
+- [ ] badges
 - [ ] share/publish
 
 ## vNext
