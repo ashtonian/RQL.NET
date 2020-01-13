@@ -39,7 +39,7 @@ build:
   include_nuget_references: true # add -IncludeReferencedProjects option while packaging NuGet artifacts
 
   # MSBuild verbosity level
-  verbosity: detailed
+  verbosity: normal
 
 before_build:
   - cmd: >-
@@ -62,13 +62,7 @@ before_package:
 test:
   assemblies:
     only:
-      - asm1.dll
-      - asm2.dll
-
-  categories:
-    only:
-      - UI
-      - E2E
+      - *tests.dll
 
 # to run tests against all except selected assemblies and/or categories
 #test:

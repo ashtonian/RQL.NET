@@ -2,8 +2,6 @@
   <PropertyGroup>
   <!-- TODO <TargetFrameworks>net461;netstandard1.3;netstandard2.0</TargetFrameworks> -->
    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <PropertyGroup>
     <PackageId>RQL.NET</PackageId>
@@ -12,7 +10,7 @@
     <Description>RQL.NET is a resource query language for .NET intended for use with REST apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON.</Description>
     <PackageVersion>0.0.10-beta</PackageVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageTags>web utility json url rql sql query dynamic builder parse parser</PackageTags>
+    <PackageTags>web utility json url rql sql query dynamic builder data-access parser </PackageTags>
     <!-- <PackageLicenseUrl>https://github.com/Ashtonian/RQL.NET</PackageLicenseUrl> -->
     <PackageProjectUrl>https://github.com/Ashtonian/RQL.NET</PackageProjectUrl>
     <RepositoryUrl></RepositoryUrl>
