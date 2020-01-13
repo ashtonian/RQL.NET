@@ -94,8 +94,12 @@ before_package:
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  # - '%xunit20%\xunit.console tests\bin\Release\netcoreapp2.2\tests.dll -appveyor'
-  - '%xunit20%\xunit.console.x86.exe tests\bin\Release\netcoreapp2.2\tests.dll -appveyor'
+  - cmd: cd tests
+  - cmd: nuget install Appveyor.TestLogger
+  - cmd: cd ..
+  - cmd: dotnet test --no-build --no-restore --test-adapter-path:. --logger:Appveyor Test
+    # - '%xunit20%\xunit.console tests\bin\Release\netcoreapp2.2\tests.dll -appveyor'
+    # - '%xunit20%\xunit.console.x86.exe tests\bin\Release\netcoreapp2.2\tests.dll -appveyor'
 
 # scripts to run after tests
 after_test:
