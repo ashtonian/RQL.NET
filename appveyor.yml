@@ -63,10 +63,10 @@ before_package:
 #---------------------------------#
 
 # to run tests against only selected assemblies and/or categories
-test:
-  assemblies:
-    only:
-      - '**\*tests.dll'
+# test:
+#   assemblies:
+#     only:
+#       - '**\*tests.dll'
 
 # to run tests against all except selected assemblies and/or categories
 #test:
