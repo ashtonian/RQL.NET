@@ -12,6 +12,9 @@ cache:
   - '%LocalAppData%\NuGet\Cache' # NuGet < v3
   - '%LocalAppData%\NuGet\v3-cache' # NuGet v3
 
+environment:
+  EnableNuGetPackageRestore: true
+
 # Automatically register private account and/or project AppVeyor NuGet feeds.
 nuget:
   account_feed: true
