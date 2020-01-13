@@ -34,7 +34,6 @@ namespace RQL.NET
         public Func<string, Type, object, (object, IError)> Converter { get; set; }
     }
 
-
     public interface ClassSpecCache
     {
         ClassSpec Get(Type t);

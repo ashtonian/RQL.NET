@@ -64,6 +64,7 @@ deploy:
     secure: QkBn6ZskcH29fb+xeOh8qQRfoJyCQUfj3ZNGEMpEtpBHZ1IFHjP2t1yaBf+zFMsR
   on:
     RELEASE: true
+
 #---------------------------------#
 #       tests configuration       #
 #---------------------------------#
