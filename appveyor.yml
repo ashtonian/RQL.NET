@@ -92,6 +92,10 @@ before_test:
   - echo script1
   - ps: Write-Host "script1"
 
+# to run your custom scripts instead of automatic tests
+test_script:
+  - %xunit20%\xunit.console <assembly> -appveyor
+
 # scripts to run after tests
 after_test:
 
