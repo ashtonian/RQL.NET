@@ -44,6 +44,7 @@ build:
 before_build:
   - cmd: >-
       dotnet restore RQL.NET/RQL.NET.csproj
+      dotnet restore tests/tests.csproj
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
 after_build:
