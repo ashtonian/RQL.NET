@@ -205,7 +205,6 @@ The parser uses reflection and by **default** its done once per class and cached
 ## Release TODO
 
 - [ ] auto build / publish
-- [ ] simple diagram image with class, json input, and sql.
 - [ ] better coverage
   - [ ] case: all attributes
   - [ ] case: all ops
