@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -42,7 +43,7 @@ namespace RQL.NET
 
     public class InMemoryClassSpecCache : ClassSpecCache
     {
-        private static Dictionary<Type, ClassSpec> TypeCache = new Dictionary<Type, ClassSpec>();
+        private static ConcurrentDictionary<Type, ClassSpec> TypeCache = new ConcurrentDictionary<Type, ClassSpec>();
 
         public ClassSpec Get(Type t)
         {
@@ -51,7 +52,7 @@ namespace RQL.NET
 
         public void Set(Type t, ClassSpec spec)
         {
-            TypeCache.Add(t, spec);
+            var result = TypeCache.AddOrUpdate(t, spec, (key, spec2) => { return spec2; });
         }
     }
 
