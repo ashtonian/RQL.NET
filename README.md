@@ -205,12 +205,9 @@ The parser uses reflection and by **default** its done once per class and cached
 
 ## Release TODO
 
-- [ ] auto build / publish
 - [ ] better coverage
   - [ ] case: all attributes
   - [ ] case: all ops
-- [ ] enable multi platform targeting
-  - [ ] .netcore3,.netcore2,net46
 - [ ] fix stricter validation - right side init object is and, or/nor is array
 - [ ] fix empty object validation  ashtonian/RQL.NET#1
 - [ ] share/publish
