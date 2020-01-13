@@ -201,6 +201,8 @@ The parser uses reflection and by **default** its done once per class and cached
 ## Release TODO
 
 - [ ] better coverage
+  - [ ] case: all attributes
+  - [ ] case: all ops
 - [ ] auto build / publish
 - [ ] enable multi platform targeting
   - [ ] .netcore3,.netcore2,net46
@@ -229,9 +231,7 @@ The parser uses reflection and by **default** its done once per class and cached
 - [ ] consider adjusting output to be an expression tree that people can access for hackability
   - [ ] remove 3rd party dependency on JSON.NET, Initial leaf spec: {left, v, right, isField, iParse(RqlExpression exp)s there is a redundant Op, fieldSpecProperties...}
 - [ ] Better Test coverage
-  - [ ] all attributes
-  - [ ] all ops
-  - [ ] Validators
+  - [ ] Validators/converters
   - [ ] IEnumberable and [] types
 - [ ] benchmark tests, run on PRs
 - [ ] would be cool to generate part of a swagger documentation from a class spec..
