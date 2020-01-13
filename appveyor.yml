@@ -88,14 +88,13 @@ before_package:
 #    - [DAL, BL]    # 2nd job
 
 # scripts to run before tests (working directory and environment changes are persisted from the previous steps such as "before_build")
-before_test:
-  - echo script1
-  - ps: Write-Host "script1"
+# before_test:
+#   - echo script1
+#   - ps: Write-Host "script1"
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  - %xunit20%\xunit.console <assembly> -appveyor
-
+  - `%xunit20%\xunit.console .\tests\bin\Release\tests.dll -appveyor`
 # scripts to run after tests
 after_test:
 

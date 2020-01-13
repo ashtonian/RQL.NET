@@ -8,7 +8,7 @@
 
 ## Why
 
-When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having an separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
+When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having a separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
 
 ## Getting Started
 
