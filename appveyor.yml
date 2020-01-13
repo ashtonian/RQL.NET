@@ -38,7 +38,7 @@ build:
   include_nuget_references: true # add -IncludeReferencedProjects option while packaging NuGet artifacts
 
   # MSBuild verbosity level
-  verbosity: quiet|minimal|normal|detailed
+  verbosity: detailed
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
 after_build:
@@ -109,35 +109,34 @@ artifacts:
 
   # pushing all *.nupkg files in build directory recursively
   - path: '**\*.nupkg'
-
 #---------------------------------#
 #        global handlers          #
 #---------------------------------#
 
 # on successful build
-on_success:
-  - do something
+# on_success:
+#   - do something
 
-# on build failure
-on_failure:
-  - do something
+# # on build failure
+# on_failure:
+#   - do something
 
-# after build failure or success
-on_finish:
-  - do something
+# # after build failure or success
+# on_finish:
+#   - do something
 
 #---------------------------------#
 #         notifications           #
 #---------------------------------#
 
-notifications:
-  # Webhook
-  - provider: Webhook
-    url: http://www.myhook2.com
-    headers:
-      User-Agent: myapp 1.0
-      Authorization:
-        secure: GhD+5xhLz/tkYY6AO3fcfQ==
-    on_build_success: false
-    on_build_failure: true
-    on_build_status_changed: true
+# notifications:
+# # Webhook
+# - provider: Webhook
+#   url: http://www.myhook2.com
+#   headers:
+#     User-Agent: myapp 1.0
+#     Authorization:
+#       secure: GhD+5xhLz/tkYY6AO3fcfQ==
+#   on_build_success: false
+#   on_build_failure: true
+#   on_build_status_changed: true
