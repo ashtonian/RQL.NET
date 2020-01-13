@@ -1,7 +1,7 @@
 # RQL.NET
 ![build status](https://ci.appveyor.com/api/projects/status/github/ashtonian/RQL.NET?branch=master&svg=true) [![time tracker](https://wakatime.com/badge/github/Ashtonian/RQL.NET.svg)](https://wakatime.com/badge/github/Ashtonian/RQL.NET) (since dec'19)
 
-`RQL.NET` is a resource query language for .NET intended for use with web apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON. It is intended to sit between a web application and a SQL based database. It converts user submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is mostly compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql) and mongodb's query language.
+`RQL.NET` is a resource query language for .NET intended for use with web apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON. It is intended to sit between a web application and a SQL based database. It converts user-submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is mostly compatible via the JSON interface with [rql (golang)](https://github.com/a8m/rql) and mongodb's query language.
 
 <p align="center">
   <img src="assets/diagram.png" alt="rql.net diagram">
@@ -9,7 +9,7 @@
 
 ## Why
 
-When creating a simple CRUD api its often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having a separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
+When creating a simple CRUD API it's often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually, I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having a separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
 
 ## Getting Started
 
@@ -176,7 +176,7 @@ public class SomeClass
 
 ## Hackability
 
-This library was structured to be a highly configurable parser. Most of the parser's components can be overriding directly or via a delegate or interface implementation via the [`Defaults`](RQL.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](RQL.NET/Defaults.cs) and [`Defaults.DefaultValidator`](RQL.NET/DefaultTypeValidator.cs). Additionally many of the data structures and internal builders are exposed to enable this package to be used as a library. You could also implement a [custom class specification](RQL.NET/ClassSpecBuilder.cs), [field specification](RQL.NET/ClassSpecBuilder.cs), and [operation mapper](RQL.NET/IOpMapper.cs) to add pretty heavy customizations including custom types and operations.
+This library was structured to be a highly configurable parser. Most of the parser's components can be overridden directly or via a delegate or interface implementation via the [`Defaults`](RQL.NET/Defaults.cs) class. Most notably [`Defaults.DefaultConverter`](RQL.NET/Defaults.cs) and [`Defaults.DefaultValidator`](RQL.NET/DefaultTypeValidator.cs). Additionally, many of the data structures and internal builders are exposed to enable this package to be used as a library. You could also implement a [custom class specification](RQL.NET/ClassSpecBuilder.cs), [field specification](RQL.NET/ClassSpecBuilder.cs), and [operation mapper](RQL.NET/IOpMapper.cs) to add pretty heavy customizations including custom types and operations.
 
 ```c#
 public static class Defaults
@@ -201,7 +201,7 @@ public static class Defaults
 
 ## Note on Performance
 
-The parser uses reflection and by **default** its done once per class and cached. Additionally when using the typed parse commands `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant json serialization and then deserialization because this was built piggy backing off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
+The parser uses reflection and by **default** it's done once per class and cached. Additionally when using the typed parse commands `Parse<T>(RqlExpression exp)` and `Parse(RqlExpression exp)` there is a redundant JSON serialization and then deserialization because this was built piggybacking off the JContainer tree structure from JSON.NET. To avoid this penalty use the `Parse<T>(string exp)` and `Parse(string exp)` calls.
 
 ## Release TODO
 
@@ -229,7 +229,7 @@ The parser uses reflection and by **default** its done once per class and cached
 - [ ] integration tests
 - [ ] nested "complex" data types support via joins or sub queries or..
 - [ ] option to ignore validation
-  - [ ] document removing of token prefix to potentially use with c# dynamic json literals easier
+  - [ ] document removing of token prefix to potentially use with c# dynamic JSON literals easier
 - [ ] consider adjusting output to be an expression tree that people can access for hackability
   - [ ] remove 3rd party dependency on JSON.NET, Initial leaf spec: {left, v, right, isField, iParse(RqlExpression exp)s there is a redundant Op, fieldSpecProperties...}
 - [ ] Better Test coverage
