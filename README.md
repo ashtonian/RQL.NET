@@ -210,34 +210,9 @@ The parser uses reflection and by **default** it's done once per class and cache
   - [ ] case: all ops
 - [ ] fix stricter validation - right side init object is and, or/nor is array
 - [ ] fix empty object validation  ashtonian/RQL.NET#1
+- [ ] typed more actionable errors
 - [ ] share/publish
 
 ## vNext
 
-- [ ] typed more actionable errors
-- [ ] better C# side query building, complaints:
-  - [ ] c# string multi-line literals not nice with interpolation
-  - [ ] c# string multi-line literals require escaping double quotes
-  - [ ] rqlExpression c# creation is heavy/bulky
-  - [ ] c# dynamics don't like symbols in prop names
-  - [ ] consider fluent action  ie rqlExpression.add(condition).add() or rqlExpression.and(rqlExpression).or(rqlExpression).
- - [ ] attributes
-  - [ ] class level attributes
-  - [ ] CustomTypeConverter
-  - [ ] CustomValidator
-  - [ ] DefaultSort
-- [ ] integration tests
-- [ ] nested "complex" data types support via joins or sub queries or..
-- [ ] option to ignore validation
-  - [ ] document removing of token prefix to potentially use with c# dynamic JSON literals easier
-- [ ] consider adjusting output to be an expression tree that people can access for hackability
-  - [ ] remove 3rd party dependency on JSON.NET, Initial leaf spec: {left, v, right, isField, iParse(RqlExpression exp)s there is a redundant Op, fieldSpecProperties...}
-- [ ] Better Test coverage
-  - [ ] Validators/converters
-  - [ ] IEnumberable and [] types
-- [ ] benchmark tests, run on PRs
-- [ ] would be cool to generate part of a swagger documentation from a class spec..
-- [ ] js client lib
-- [ ] contributing guidelines and issue template
-- [ ] official postgres / mongo support. Starting point: IOpMapper.
-  - [ ] consider splitting package into RQL.Core and RQL.MSSQL to allow for RQL.Postgres or RQL.Mongo
+[See #6](https://github.com/Ashtonian/RQL.NET/issues/6)
