@@ -1,7 +1,7 @@
 # RQL.NET
 ![build status](https://ci.appveyor.com/api/projects/status/github/ashtonian/RQL.NET?branch=master&svg=true) [![time tracker](https://wakatime.com/badge/github/Ashtonian/RQL.NET.svg)](https://wakatime.com/badge/github/Ashtonian/RQL.NET) (since dec'19)
 
-`RQL.NET` is a resource query language for .NET intended for use with web apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON. It is intended to sit between a web application and a SQL based database. It converts user-submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is a port of [rql (golang)](https://github.com/a8m/rql).
+`RQL.NET` is a resource query language for .NET intended for use with web apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON. It is intended to sit between a web application and a SQL based database. It converts user-submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is a port of [rql (golang)](https://github.com/a8m/rql). Its primary purpose is to generate complex where clauses `is_done = 1 OR (updated_at < X AND updated_at > Y) OR ... ` while validating their types. 
 
 <p align="center">
   <img src="assets/diagram.png" alt="rql.net diagram">
@@ -9,7 +9,8 @@
 
 ## Why
 
-When creating a simple CRUD API it's often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually, I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having a separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`.
+When creating a simple CRUD API it's often a requirement to provide basic collection filtering functionality. Without implementing some other heavy layer (graphql, odata, ef), usually, I would end up having to write code to support each field for a given class. A common solution is adding a query parameter for each field, and when using aggregate functions having a separate composite parameter for that aggregate ie `?updated_at_gt=x&updated_at_lt=y`. Outside of that being cumbersome for lots of fields, this begins to totally breakdown when needing to apply a disjunction between two conditions using aggregate functions, something like `SELECT * FROM TABLE WHERE is_done = 1 OR (updated_at < X AND updated_at > Y)`. So to deal with this I ported one of my favorite libraries from go. The result is a control point that validates types and range of filters as well as allowing the use to enter complex filters. 
+
 
 ## Getting Started
 
