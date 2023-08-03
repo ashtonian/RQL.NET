@@ -1,5 +1,5 @@
 # RQL.NET
-![build status](https://ci.appveyor.com/api/projects/status/github/ashtonian/RQL.NET?branch=master&svg=true) [![time tracker](https://wakatime.com/badge/github/Ashtonian/RQL.NET.svg)](https://wakatime.com/badge/github/Ashtonian/RQL.NET) (since dec'19)
+![build status](https://ci.appveyor.com/api/projects/status/github/ashtonian/RQL.NET?branch=master&svg=true) [![time tracker](https://wakatime.com/badge/github/Ashtonian/RQL.NET.svg)](https://wakatime.com/badge/github/Ashtonian/RQL.NET)
 
 `RQL.NET` is a resource query language for .NET intended for use with web apps. It provides a simple, hackable api for creating dynamic sql queries from user submitted JSON. It is intended to sit between a web application and a SQL based database. It converts user-submitted JSON query structures (inspired by mongodb query syntax) to sql queries, handling validation and type conversions. It was inspired by and is a port of [rql (golang)](https://github.com/a8m/rql). Its primary purpose is to generate complex where clauses `is_done = 1 OR (updated_at < X AND updated_at > Y) OR ... ` while validating their types. 
 
